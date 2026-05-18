@@ -3,53 +3,61 @@
 @tailwind utilities;
 
 :root {
-	--foreground-rgb: 0, 0, 0;
-	--background-start-rgb: 214, 219, 220;
-	--background-end-rgb: 255, 255, 255;
-
-	--primary-100: #ff6f00;
-	--primary-200: #dc5200;
-	--primary-300: #8d0000;
-	--accent-100: #00bfa5;
-	--accent-200: #005f4b;
-	--text-100: #333333;
-	--text-200: #5c5c5c;
-	--bg-100: #f9f9f9;
-	--bg-200: #efefef;
-	--bg-300: #c6c6c6;
-
-	--primary-100: #9b1782;
-	--primary-200: #cf51b2;
-	--primary-300: #ffb6ff;
-	--accent-100: #9b1782;
-	--accent-200: #ffb6ff;
-	--text-100: #7d5a2f;
-	--text-200: #ae8759;
-	--bg-100: #000034;
-	--bg-200: #0e1544;
-	--bg-300: #2a2b5e;
-
-	--primary-100: #f7e564;
-	--primary-200: #d7c746;
-	--primary-300: #8e8400;
-	--accent-100: #ff56b5;
-	--accent-200: #920058;
-	--text-100: #f47806;
-	--text-200: #d15c00;
-	--bg-100: #000034;
-	--bg-200: #0e1544;
-	--bg-300: #2a2b5e;
+	--color-bg: #0a0e1a;
+	--color-surface: #12182b;
+	--color-surface-elevated: #1a2340;
+	--color-border: #2a3555;
+	--color-text: #e8ecf4;
+	--color-text-muted: #9aa8c7;
+	--color-x: #38bdf8;
+	--color-o: #fb923c;
+	--color-accent: #6366f1;
+	--color-accent-hover: #818cf8;
+	--color-success: #34d399;
+	--color-danger: #f87171;
+	--color-active-board: #6366f133;
+	--radius-sm: 0.375rem;
+	--radius-md: 0.5rem;
+	--radius-lg: 0.75rem;
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
 	:root {
-		--foreground-rgb: 255, 255, 255;
-		--background-start-rgb: 0, 0, 0;
-		--background-end-rgb: 0, 0, 0;
+		--color-bg: #f4f6fb;
+		--color-surface: #ffffff;
+		--color-surface-elevated: #eef1f8;
+		--color-border: #d4dae8;
+		--color-text: #0f172a;
+		--color-text-muted: #64748b;
 	}
 }
 
+* {
+	box-sizing: border-box;
+}
+
+html {
+	color-scheme: dark;
+}
+
 body {
-	color: rgb(var(--foreground-rgb));
-	background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
+	color: var(--color-text);
+	background: var(--color-bg);
+	min-height: 100dvh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}
+
+@layer utilities {
+	.text-balance {
+		text-wrap: balance;
+	}
 }
