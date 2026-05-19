@@ -6,6 +6,16 @@ import { BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { hasClerk } from "@/lib/clerk";
 
+const headerUserButtonAppearance = {
+	elements: {
+		rootBox: "flex items-center",
+		userButtonBox: "flex items-center",
+		userButtonTrigger:
+			"rounded-full p-0 focus:shadow-none focus-visible:ring-2 focus-visible:ring-accent",
+		userButtonAvatarBox: "h-9 w-9",
+	},
+};
+
 export function UserMenu({
 	onNavigate,
 	variant = "header",
@@ -57,8 +67,17 @@ export function UserMenu({
 						<BarChart3 className="h-4 w-4 text-muted" aria-hidden />
 						<span className={drawer ? undefined : "hidden sm:inline"}>Activity</span>
 					</Link>
-					<div className={drawer ? "flex justify-center" : undefined}>
-						<UserButton afterSignOutUrl="/" />
+					<div
+						className={
+							drawer
+								? "flex justify-center"
+								: "flex shrink-0 items-center leading-none"
+						}
+					>
+						<UserButton
+							afterSignOutUrl="/"
+							appearance={drawer ? undefined : headerUserButtonAppearance}
+						/>
 					</div>
 				</div>
 			</SignedIn>

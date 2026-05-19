@@ -7,6 +7,8 @@ import { contentWidth } from "@/lib/layout";
 import { useJoinByCode } from "@/hooks/useJoinByCode";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export function JoinByCodeFlow({
 	initialCode = "",
@@ -75,19 +77,20 @@ export function JoinByCodeFlow({
 				</Card>
 			) : (
 				<Card>
-					<label className="block text-sm font-medium text-foreground">
+					<Label htmlFor="join-room-code" className="block">
 						Room code
-						<input
-							type="text"
-							value={code}
-							onChange={(e) => setCode(normalizeInviteCode(e.target.value))}
-							placeholder="e.g. JWU5ME"
-							maxLength={8}
-							className="mt-1 min-h-11 w-full rounded-md border border-border bg-bg px-3 font-mono text-lg tracking-widest text-foreground uppercase"
-							aria-label="Room code"
-							disabled={autoJoin && loading}
-						/>
-					</label>
+					</Label>
+					<Input
+						id="join-room-code"
+						type="text"
+						value={code}
+						onChange={(e) => setCode(normalizeInviteCode(e.target.value))}
+						placeholder="e.g. JWU5ME"
+						maxLength={8}
+						className="mt-1 font-mono text-lg uppercase tracking-widest"
+						aria-label="Room code"
+						disabled={autoJoin && loading}
+					/>
 					<Button
 						onClick={() => void runJoin(code)}
 						loading={loading}

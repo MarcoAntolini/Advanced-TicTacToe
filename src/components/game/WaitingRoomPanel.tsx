@@ -9,7 +9,8 @@ import type { Id } from "@convex/_generated/dataModel";
 import { getGuestId } from "@/lib/guest";
 import { buildJoinUrl, copyToClipboard } from "@/lib/invite";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { GamePanelDialog } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 export function WaitingRoomPanel({
 	gameId,
@@ -56,67 +57,71 @@ export function WaitingRoomPanel({
 	};
 
 	return (
-		<div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-4">
-			<Card className="pointer-events-auto w-full max-w-md animate-overlay-panel border-border/80 bg-surface/95 shadow-2xl backdrop-blur-sm">
-				<div className="flex flex-col items-center text-center">
-					<p className="text-sm font-medium uppercase tracking-wide text-accent">
-						Waiting for opponent
-					</p>
-					<h2 className="mt-2 text-xl font-semibold text-foreground">
-						Share this room with a friend
-					</h2>
-					<p className="mt-2 text-sm text-muted">
-						Send the link or room code. They&apos;ll join as O and the game starts
-						automatically.
-					</p>
+		<GamePanelDialog open>
+			<div className="flex flex-col items-center text-center">
+				<p className="text-sm font-medium uppercase tracking-wide text-accent">
+					Waiting for opponent
+				</p>
+				<h2 className="mt-2 text-xl font-semibold text-foreground">
+					Share this room with a friend
+				</h2>
+				<p className="mt-2 text-sm text-muted">
+					Send the link or room code. They&apos;ll join as O and the game starts
+					automatically.
+				</p>
 
-					{error ? (
-						<p className="mt-4 w-full rounded-md bg-danger/20 px-3 py-2 text-sm text-danger" role="alert">
-							{error}
-						</p>
-					) : null}
+				{error ? (
+					<p
+						className="mt-4 w-full rounded-md bg-danger/20 px-3 py-2 text-sm text-danger"
+						role="alert"
+					>
+						{error}
+					</p>
+				) : null}
 
-					<div className="mt-6 flex w-full flex-col gap-3">
-						<Button onClick={handleCopyLink} className="w-full gap-2">
-							{copiedLink ? (
+				<div className="mt-6 flex w-full flex-col gap-3">
+					<Button onClick={handleCopyLink} className="w-full gap-2">
+						{copiedLink ? (
+							<Check className="h-4 w-4" aria-hidden />
+						) : (
+							<Link2 className="h-4 w-4" aria-hidden />
+						)}
+						{copiedLink ? "Link copied!" : "Copy invite link"}
+					</Button>
+
+					<div className="flex items-center gap-2">
+						<Input
+							readOnly
+							value={inviteCode}
+							className="text-center font-mono text-lg font-bold tracking-widest"
+							aria-label="Room code"
+						/>
+						<Button
+							variant="secondary"
+							onClick={handleCopyCode}
+							className="min-w-[7rem] gap-2"
+							aria-label="Copy room code"
+						>
+							{copiedCode ? (
 								<Check className="h-4 w-4" aria-hidden />
 							) : (
-								<Link2 className="h-4 w-4" aria-hidden />
+								<Copy className="h-4 w-4" aria-hidden />
 							)}
-							{copiedLink ? "Link copied!" : "Copy invite link"}
-						</Button>
-
-						<div className="flex items-center gap-2">
-							<div className="flex min-h-11 flex-1 items-center justify-center rounded-md border border-border bg-bg px-4 font-mono text-lg font-bold tracking-widest text-foreground">
-								{inviteCode}
-							</div>
-							<Button
-								variant="secondary"
-								onClick={handleCopyCode}
-								className="min-w-[7rem] gap-2"
-								aria-label="Copy room code"
-							>
-								{copiedCode ? (
-									<Check className="h-4 w-4" aria-hidden />
-								) : (
-									<Copy className="h-4 w-4" aria-hidden />
-								)}
-								{copiedCode ? "Copied" : "Copy"}
-							</Button>
-						</div>
-
-						<Button
-							variant="ghost"
-							onClick={handleCancel}
-							loading={cancelling}
-							className="mt-2 w-full gap-2 text-muted hover:text-danger"
-						>
-							<X className="h-4 w-4" aria-hidden />
-							Cancel room
+							{copiedCode ? "Copied" : "Copy"}
 						</Button>
 					</div>
+
+					<Button
+						variant="ghost"
+						onClick={handleCancel}
+						loading={cancelling}
+						className="mt-2 w-full gap-2 text-muted hover:text-danger"
+					>
+						<X className="h-4 w-4" aria-hidden />
+						Cancel room
+					</Button>
 				</div>
-			</Card>
-		</div>
+			</div>
+		</GamePanelDialog>
 	);
 }

@@ -10,18 +10,25 @@
 	--radius-lg: 0.75rem;
 }
 
+@layer base {
+	* {
+		@apply border-border;
+	}
+
+	body {
+		@apply bg-background text-foreground;
+	}
+}
+
 * {
 	box-sizing: border-box;
 }
-
 
 html {
 	scrollbar-gutter: stable;
 }
 
 body {
-	color: var(--color-text);
-	background: var(--color-bg);
 	min-height: 100dvh;
 }
 

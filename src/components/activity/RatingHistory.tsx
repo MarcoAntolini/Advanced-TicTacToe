@@ -4,6 +4,15 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { api } from "@convex/_generated/api";
 import { Card } from "@/components/ui/Card";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 export function RatingHistory() {
 	const history = useQuery(api.ratings.queries.listMyRatingHistory, { limit: 20 });
@@ -59,41 +68,59 @@ export function RatingHistory() {
 				})}
 			</div>
 
-			<ul className="max-h-64 space-y-2 overflow-y-auto">
-				{history.map((row) => (
-					<li
-						key={row.gameId}
-						className="flex items-center justify-between gap-3 rounded-md border border-border bg-bg px-3 py-2 text-sm"
-					>
-						<div className="min-w-0">
-							<p className="truncate font-medium capitalize text-foreground">
-								{row.result} vs {row.opponentName}
-							</p>
-							<p className="text-xs text-muted">
-								{new Date(row.appliedAt).toLocaleDateString(undefined, {
-									month: "short",
-									day: "numeric",
-								})}
-							</p>
-						</div>
-						<div className="shrink-0 text-right">
-							<p
-								className={`font-mono font-semibold tabular-nums ${
-									row.delta > 0
-										? "text-success"
-										: row.delta < 0
-											? "text-danger"
-											: "text-muted"
-								}`}
-							>
-								{row.delta > 0 ? "+" : ""}
-								{row.delta}
-							</p>
-							<p className="font-mono text-xs text-muted tabular-nums">{row.ratingAfter}</p>
-						</div>
-					</li>
-				))}
-			</ul>
+			<div className="max-h-64 overflow-y-auto rounded-md border border-border">
+				<Table>
+					<TableHeader>
+						<TableRow className="hover:bg-transparent">
+							<TableHead>Match</TableHead>
+							<TableHead className="hidden sm:table-cell">Date</TableHead>
+							<TableHead className="text-right">Δ</TableHead>
+							<TableHead className="text-right">Rating</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{history.map((row) => (
+							<TableRow key={row.gameId}>
+								<TableCell className="py-2">
+									<p className="truncate font-medium capitalize text-foreground">
+										{row.result} vs {row.opponentName}
+									</p>
+									<p className="text-xs text-muted sm:hidden">
+										{new Date(row.appliedAt).toLocaleDateString(undefined, {
+											month: "short",
+											day: "numeric",
+										})}
+									</p>
+								</TableCell>
+								<TableCell className="hidden py-2 text-muted sm:table-cell">
+									{new Date(row.appliedAt).toLocaleDateString(undefined, {
+										month: "short",
+										day: "numeric",
+									})}
+								</TableCell>
+								<TableCell className="py-2 text-right">
+									<span
+										className={cn(
+											"font-mono font-semibold tabular-nums",
+											row.delta > 0
+												? "text-success"
+												: row.delta < 0
+													? "text-danger"
+													: "text-muted",
+										)}
+									>
+										{row.delta > 0 ? "+" : ""}
+										{row.delta}
+									</span>
+								</TableCell>
+								<TableCell className="py-2 text-right font-mono text-xs tabular-nums text-muted">
+									{row.ratingAfter}
+								</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			</div>
 		</Card>
 	);
 }

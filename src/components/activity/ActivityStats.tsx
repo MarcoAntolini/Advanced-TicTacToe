@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { api } from "@convex/_generated/api";
 import { DEFAULT_RATING } from "@shared/ratings/elo";
+import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 
 export function ActivityStats() {
@@ -28,22 +29,31 @@ export function ActivityStats() {
 		<div className="space-y-4">
 			<Card>
 				<div className="flex flex-wrap items-end justify-between gap-3">
-					<div>
-						<h2 className="font-medium">Ranked rating</h2>
-						<p className="mt-1 font-mono text-3xl font-bold tabular-nums text-accent">
-							{rating}
-						</p>
-						{rankContext ? (
-							<p className="mt-1 text-sm text-muted">
-								{rankContext.onLeaderboard && rankContext.rank
-									? `Rank #${rankContext.rank} on leaderboard`
-									: rankContext.gamesUntilLeaderboard > 0
-										? `${rankContext.gamesUntilLeaderboard} more ranked ${
-												rankContext.gamesUntilLeaderboard === 1 ? "game" : "games"
-											} to appear on the board`
-										: `${rankContext.ratedGames} ranked games played`}
+					<div className="flex min-w-0 items-start gap-4">
+						<Avatar
+							name={profile.displayName}
+							src={profile.avatarUrl}
+							size={48}
+						/>
+						<div>
+							<h2 className="font-medium">Ranked rating</h2>
+							<p className="mt-1 font-mono text-3xl font-bold tabular-nums text-accent">
+								{rating}
 							</p>
-						) : null}
+							{rankContext ? (
+								<p className="mt-1 text-sm text-muted">
+									{rankContext.onLeaderboard && rankContext.rank
+										? `Rank #${rankContext.rank} on leaderboard`
+										: rankContext.gamesUntilLeaderboard > 0
+											? `${rankContext.gamesUntilLeaderboard} more ranked ${
+													rankContext.gamesUntilLeaderboard === 1
+														? "game"
+														: "games"
+												} to appear on the board`
+											: `${rankContext.ratedGames} ranked games played`}
+								</p>
+							) : null}
+						</div>
 					</div>
 					<Link
 						href="/leaderboard"

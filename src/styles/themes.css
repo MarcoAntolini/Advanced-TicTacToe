@@ -100,3 +100,28 @@
 	--color-danger: #dc2626;
 	--color-active-board: #6366f126;
 }
+
+/* Shadcn token bridge (aliases app theme vars) */
+:root,
+[data-theme] {
+	--background: var(--color-bg);
+	--foreground: var(--color-text);
+	--card: var(--color-surface);
+	--card-foreground: var(--color-text);
+	--popover: var(--color-surface-elevated);
+	--popover-foreground: var(--color-text);
+	--primary: var(--color-accent);
+	--primary-foreground: #ffffff;
+	--secondary: var(--color-surface-elevated);
+	--secondary-foreground: var(--color-text);
+	--muted: var(--color-surface);
+	--muted-foreground: var(--color-text-muted);
+	--accent: var(--color-surface-elevated);
+	--accent-foreground: var(--color-text);
+	--destructive: var(--color-danger);
+	--destructive-foreground: #ffffff;
+	--border: var(--color-border);
+	--input: var(--color-border);
+	--ring: var(--color-accent);
+	--radius: var(--radius-md);
+}

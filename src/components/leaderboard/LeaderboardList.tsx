@@ -4,7 +4,17 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { api } from "@convex/_generated/api";
 import { DEFAULT_RATING } from "@shared/ratings/elo";
+import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 export function LeaderboardList() {
 	const rows = useQuery(api.ratings.queries.listLeaderboard, { limit: 50 });
@@ -34,35 +44,59 @@ export function LeaderboardList() {
 					Top rated players with {season.leaderboardMinGames}+ ranked games
 				</p>
 			</div>
-			<ul className="divide-y divide-border">
-				{rows.map((row) => {
-					const isMe = myContext && row.userId === myContext.userId;
-					return (
-						<li
-							key={row.userId}
-							className={`flex items-center gap-4 px-4 py-3 ${
-								isMe ? "bg-accent/10" : ""
-							}`}
-						>
-							<span className="w-8 shrink-0 text-center font-mono text-sm text-muted">
-								{row.rank}
-							</span>
-							<div className="min-w-0 flex-1">
-								<p className="truncate font-medium text-foreground">
-									{row.displayName}
-									{isMe ? (
-										<span className="ml-2 text-xs font-normal text-accent">(you)</span>
-									) : null}
-								</p>
-								<p className="text-xs text-muted">{row.ratedGames} ranked games</p>
-							</div>
-							<span className="shrink-0 font-mono text-lg font-semibold tabular-nums text-accent">
-								{row.rating ?? DEFAULT_RATING}
-							</span>
-						</li>
-					);
-				})}
-			</ul>
+			<Table>
+				<TableHeader>
+					<TableRow className="hover:bg-transparent">
+						<TableHead className="w-12">#</TableHead>
+						<TableHead>Player</TableHead>
+						<TableHead className="hidden text-right sm:table-cell">Games</TableHead>
+						<TableHead className="text-right">Rating</TableHead>
+					</TableRow>
+				</TableHeader>
+				<TableBody>
+					{rows.map((row) => {
+						const isMe = myContext && row.userId === myContext.userId;
+						return (
+							<TableRow
+								key={row.userId}
+								className={cn(isMe && "bg-accent/10")}
+							>
+								<TableCell className="font-mono text-sm text-muted">
+									{row.rank}
+								</TableCell>
+								<TableCell>
+									<div className="flex min-w-0 items-center gap-3">
+										<Avatar
+											name={row.displayName}
+											src={row.avatarUrl}
+											size={36}
+										/>
+										<div className="min-w-0">
+											<p className="truncate font-medium text-foreground">
+												{row.displayName}
+												{isMe ? (
+													<span className="ml-2 text-xs font-normal text-accent">
+														(you)
+													</span>
+												) : null}
+											</p>
+											<p className="text-xs text-muted sm:hidden">
+												{row.ratedGames} ranked games
+											</p>
+										</div>
+									</div>
+								</TableCell>
+								<TableCell className="hidden text-right text-muted sm:table-cell">
+									{row.ratedGames}
+								</TableCell>
+								<TableCell className="text-right font-mono text-lg font-semibold tabular-nums text-accent">
+									{row.rating ?? DEFAULT_RATING}
+								</TableCell>
+							</TableRow>
+						);
+					})}
+				</TableBody>
+			</Table>
 			{myContext ? (
 				<p className="border-t border-border px-4 py-3 text-center text-xs text-muted">
 					Your rating:{" "}

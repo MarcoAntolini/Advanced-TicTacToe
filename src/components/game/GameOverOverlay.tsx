@@ -6,6 +6,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { isForfeitWin } from "@shared/game/engine";
 import type { GameState, Player } from "@shared/game/types";
 import { Button } from "@/components/ui/Button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { PlayerMark } from "./PlayerMark";
 
 function Confetti() {
@@ -73,7 +74,6 @@ export function GameOverOverlay({
 	onRematch,
 }: {
 	state: GameState;
-	/** Signed-in player's Elo change after a ranked game. */
 	ratingDelta?: number;
 	onRestart?: () => void;
 	onRematch?: () => void;
@@ -91,95 +91,106 @@ export function GameOverOverlay({
 
 	if (dismissed) {
 		return (
-			<div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
-				<button
-					type="button"
+			<div className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4">
+				<Button
+					variant="secondary"
 					onClick={() => setDismissed(false)}
-					className="pointer-events-auto flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface px-5 py-2 text-sm font-medium text-foreground shadow-lg transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+					className="pointer-events-auto gap-2 rounded-full shadow-lg"
 					aria-label="Show game results"
 				>
 					<Eye className="h-4 w-4 text-accent" aria-hidden />
 					<span>{title}</span>
 					<span className="text-muted">· Show results</span>
-				</button>
+				</Button>
 			</div>
 		);
 	}
 
 	return (
-		<div
-			className="animate-overlay-fade fixed inset-0 z-50 flex items-center justify-center p-4"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="game-over-title"
+		<Dialog
+			open={!dismissed}
+			onOpenChange={(open) => {
+				if (!open) setDismissed(true);
+			}}
 		>
-			<div className="absolute inset-0 bg-bg/80 backdrop-blur-sm" aria-hidden />
-			{isWin ? <Confetti /> : null}
+			<DialogContent
+				className="flex max-w-md flex-col gap-6 border-border bg-surface p-6 sm:p-8"
+				onInteractOutside={(event) => event.preventDefault()}
+			>
+				{isWin ? <Confetti /> : null}
 
-			<div className="animate-overlay-panel relative w-full max-w-md rounded-xl border border-border bg-surface p-8 shadow-2xl">
-				<div className="flex flex-col items-center text-center">
-					<div
-						className={`mb-4 flex h-16 w-16 items-center justify-center rounded-full ${
-							state.status === "draw"
-								? "bg-muted/20 text-muted"
-								: state.winner === "X"
-									? "bg-playerX/20 text-playerX"
-									: "bg-playerO/20 text-playerO"
-						} ${isWin ? "animate-winner-glow" : ""}`}
-						style={{ "--glow-color": glow } as CSSProperties}
-					>
-						<Icon className="h-8 w-8" aria-hidden />
+				<div className="flex flex-col items-center gap-4 text-center">
+					<div className="flex flex-col items-center gap-3">
+						<div
+							className={`flex h-14 w-14 items-center justify-center rounded-full ${
+								state.status === "draw"
+									? "bg-surface-elevated text-muted"
+									: state.winner === "X"
+										? "bg-playerX/20 text-playerX"
+										: "bg-playerO/20 text-playerO"
+							} ${isWin ? "animate-winner-glow" : ""}`}
+							style={{ "--glow-color": glow } as CSSProperties}
+						>
+							<Icon className="h-7 w-7" aria-hidden />
+						</div>
+
+						{isWin && state.winner ? (
+							<div className="animate-board-claim" aria-hidden>
+								<PlayerMark player={state.winner} size="hero" glow />
+							</div>
+						) : null}
 					</div>
 
-					{isWin && state.winner ? (
-						<div className="mb-2 animate-board-claim" aria-hidden>
-							<PlayerMark player={state.winner} size="hero" glow />
-						</div>
-					) : null}
+					<div className="space-y-2">
+						<DialogTitle className="text-2xl leading-tight">{title}</DialogTitle>
+						<DialogDescription className="text-balance leading-relaxed">
+							{subtitle}
+						</DialogDescription>
+						{ratingDelta !== undefined ? (
+							<p
+								className={`pt-1 font-mono text-lg font-semibold tabular-nums ${
+									ratingDelta > 0
+										? "text-success"
+										: ratingDelta < 0
+											? "text-danger"
+											: "text-muted"
+								}`}
+							>
+								Rating {ratingDelta > 0 ? "+" : ""}
+								{ratingDelta}
+							</p>
+						) : null}
+					</div>
+				</div>
 
-					<h2 id="game-over-title" className="text-2xl font-bold text-foreground">
-						{title}
-					</h2>
-					<p className="mt-2 text-muted">{subtitle}</p>
-
-					{ratingDelta !== undefined ? (
-						<p
-							className={`mt-3 font-mono text-lg font-semibold tabular-nums ${
-								ratingDelta > 0
-									? "text-success"
-									: ratingDelta < 0
-										? "text-danger"
-										: "text-muted"
-							}`}
-						>
-							Rating {ratingDelta > 0 ? "+" : ""}
-							{ratingDelta}
-						</p>
-					) : null}
-
+				<div className="flex flex-col gap-3 border-t border-border pt-5">
 					<Button
 						variant="ghost"
 						onClick={() => setDismissed(true)}
-						className="mt-6 gap-2"
+						className="h-10 min-h-10 w-full gap-2 text-muted"
 					>
 						<EyeOff className="h-4 w-4" aria-hidden />
 						View board
 					</Button>
 
-					<div className="mt-4 flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
+					<div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
 						{onRematch ? (
-							<Button onClick={onRematch} className="gap-2 sm:min-w-[140px]">
+							<Button onClick={onRematch} className="gap-2 sm:min-w-[8.75rem]">
 								<Swords className="h-4 w-4" aria-hidden />
 								Rematch
 							</Button>
 						) : null}
 						{onRestart ? (
-							<Button variant="secondary" onClick={onRestart} className="gap-2 sm:min-w-[140px]">
+							<Button
+								variant="secondary"
+								onClick={onRestart}
+								className="gap-2 sm:min-w-[8.75rem]"
+							>
 								<RotateCcw className="h-4 w-4" aria-hidden />
 								Play again
 							</Button>
 						) : null}
-						<Link href="/" className="sm:min-w-[140px]">
+						<Link href="/" className="sm:min-w-[8.75rem]">
 							<Button variant="ghost" className="w-full gap-2">
 								<Home className="h-4 w-4" aria-hidden />
 								Home
@@ -187,7 +198,7 @@ export function GameOverOverlay({
 						</Link>
 					</div>
 				</div>
-			</div>
-		</div>
+			</DialogContent>
+		</Dialog>
 	);
 }

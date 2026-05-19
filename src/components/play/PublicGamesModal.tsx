@@ -6,7 +6,7 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { getGuestId } from "@/lib/guest";
 import { usePlayActions } from "@/hooks/usePlayActions";
-import { Modal } from "@/components/ui/Modal";
+import { TitledDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -39,7 +39,7 @@ export function PublicGamesModal({
 	};
 
 	return (
-		<Modal open={open} onClose={onClose} title="Public games">
+		<TitledDialog open={open} onClose={onClose} title="Public games">
 			{pendingConfirm ? (
 				<Card className="mb-4 border-playerO/40 bg-playerO/5">
 					<p className="text-sm text-muted">
@@ -107,6 +107,6 @@ export function PublicGamesModal({
 					))}
 				</ul>
 			)}
-		</Modal>
+		</TitledDialog>
 	);
 }

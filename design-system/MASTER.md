@@ -132,13 +132,32 @@ Gaming / competitive board game. Dark-first, readable at a glance.
 
 ## Colors (CSS variables)
 
-Defined per theme in `src/styles/themes.css`, wired through `src/styles/globals.css`.
+Defined per theme in `src/styles/themes.css`, wired through `src/styles/globals.css` and `tailwind.config.ts`.
 
-- **Background** `--color-bg`
-- **Surface** `--color-surface`, `--color-surface-elevated`
-- **Player X** cool (`--color-x` / `playerX`)
-- **Player O** warm (`--color-o` / `playerO`)
-- **Accent** `--color-accent` (CTAs, active board ring)
+### App tokens (source of truth per theme)
+
+Set on `:root` / `[data-theme="…"]` blocks. Use via Tailwind: `bg-bg`, `bg-surface`, `text-muted`, `text-accent`, `border-border`, `text-playerX`, etc.
+
+| Variable | Tailwind | Use |
+|----------|----------|-----|
+| `--color-bg` | `bg-bg`, `background` | Page background |
+| `--color-text` | `text-foreground` | Body text |
+| `--color-text-muted` | `text-muted` | Secondary copy |
+| `--color-surface` | `bg-surface`, `bg-card` | Cards, panels |
+| `--color-surface-elevated` | `bg-surface-elevated` | Hover, elevated UI |
+| `--color-border` | `border-border` | Borders |
+| `--color-accent` | `bg-accent`, `text-accent` | CTAs, links, active board |
+| `--color-accent-hover` | `bg-accent-hover` | CTA hover |
+| `--color-danger` | `text-danger`, `bg-danger/…` | Errors, destructive |
+| `--color-success` | `text-success` | Wins, positive delta |
+| `--color-x` / `--color-o` | `playerX`, `playerO` | Board marks only |
+| `--color-active-board` | (CSS var in game) | Active mini-board ring |
+
+**Rule:** No raw hex in `src/components/` or `src/app/` — only in `themes.css` and `themes.ts` swatches.
+
+### Shadcn bridge (aliases)
+
+Shared block at the end of `themes.css` (`:root`, `[data-theme]`). Maps shadcn/Radix expectations onto app tokens, e.g. `--background: var(--color-bg)`, `--primary: var(--color-accent)`, `--ring: var(--color-accent)`. Tailwind keys `primary`, `card`, `destructive`, `ring`, etc. read these aliases. shadcn **accent** (hover surface) is `--color-surface-elevated`, not CTA accent — prefer `bg-accent` / `text-accent` for brand CTAs.
 
 ## Typography
 
@@ -161,7 +180,26 @@ Defined per theme in `src/styles/themes.css`, wired through `src/styles/globals.
 
 | Area | Location |
 |------|-----------|
-| Primitives | `src/components/ui/` — `Button`, `Card`, `Badge`, `Avatar` |
+| Primitives | `src/components/ui/` — see file list below |
+| Shadcn migration | Completed — [`SHADCN-MIGRATION.md`](./SHADCN-MIGRATION.md) |
+
+**`src/components/ui/` files**
+
+| File | Role |
+|------|------|
+| `Button.tsx` | App API (`primary`/`secondary`/`ghost`/`danger`, `loading`, `ButtonLook`) + CVA |
+| `Card.tsx` | Card + `CardHeader` / `CardContent` / … |
+| `Badge.tsx` | Accent-tinted badge |
+| `Avatar.tsx` | Radix avatar + `Avatar` helper |
+| `dialog.tsx` | Radix dialog + `TitledDialog` (modals) + `GamePanelDialog` (waiting room) |
+| `alert-dialog.tsx` | Available for confirm-only flows (not game-over) |
+| `dropdown-menu.tsx` | Theme picker |
+| `sheet.tsx` | Mobile nav drawer |
+| `input.tsx`, `label.tsx` | Forms (join code, etc.) |
+| `radio-group.tsx` | Create-game option groups |
+| `table.tsx` | Leaderboard, rating history, game history |
+
+**Overlays:** `TitledDialog` (dismissible modals), `GamePanelDialog` (waiting room), `Dialog` (game-over via `GameOverOverlay`). Game board cells stay custom.
 | Layout widths | `src/lib/layout.ts` — `contentWidth`, `heroTextWidth` |
 | Shell | `src/components/layout/` — `Header`, `MobileNav`, `NavLink`, `UserMenu`, `ThemeSwitcher` |
 | Activity | `src/components/activity/` — `ActivityStats`, `GameHistoryList`, `StatsTeaser` |

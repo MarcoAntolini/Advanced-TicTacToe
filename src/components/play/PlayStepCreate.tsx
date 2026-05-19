@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
 	DEFAULT_CREATE_SETTINGS,
 	MODE_OPTIONS,
@@ -14,6 +14,9 @@ import { useBlockingRealtimeGame } from "@/hooks/useBlockingRealtimeGame";
 import { ActiveGameBlockedBanner } from "@/components/game/ActiveGamesList";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
 
 function OptionGroup<T extends string>({
 	label,
@@ -26,34 +29,41 @@ function OptionGroup<T extends string>({
 	value: T;
 	onChange: (v: T) => void;
 }) {
+	const groupId = useId();
+
 	return (
 		<fieldset>
 			<legend className="text-sm font-semibold text-foreground">{label}</legend>
-			<div className="mt-2 grid gap-2">
+			<RadioGroup
+				id={groupId}
+				value={value}
+				onValueChange={(v) => onChange(v as T)}
+				className="mt-2"
+				aria-label={label}
+			>
 				{options.map((opt) => (
-					<label
+					<Label
 						key={opt.value}
-						className={`flex cursor-pointer gap-3 rounded-md border px-3 py-3 transition-colors ${
+						htmlFor={`${groupId}-${opt.value}`}
+						className={cn(
+							"flex cursor-pointer gap-3 rounded-md border px-3 py-3 font-normal transition-colors",
 							value === opt.value
 								? "border-accent bg-accent/5"
-								: "border-border hover:border-accent/40"
-						}`}
+								: "border-border hover:border-accent/40",
+						)}
 					>
-						<input
-							type="radio"
-							name={label}
+						<RadioGroupItem
 							value={opt.value}
-							checked={value === opt.value}
-							onChange={() => onChange(opt.value)}
-							className="mt-1"
+							id={`${groupId}-${opt.value}`}
+							className="border-accent text-accent"
 						/>
 						<span>
 							<span className="block font-medium">{opt.label}</span>
 							<span className="block text-sm text-muted">{opt.description}</span>
 						</span>
-					</label>
+					</Label>
 				))}
-			</div>
+			</RadioGroup>
 		</fieldset>
 	);
 }
@@ -103,7 +113,7 @@ export function PlayStepCreate({
 				<ActiveGameBlockedBanner gameId={blockingGame.gameId} />
 			) : null}
 
-			<Card className={`space-y-8${realtimeBlocked ? " opacity-60" : ""}`}>
+			<Card className={cn("space-y-8", realtimeBlocked && "opacity-60")}>
 				<OptionGroup
 					label="Visibility"
 					options={VISIBILITY_OPTIONS.map((o) => ({
