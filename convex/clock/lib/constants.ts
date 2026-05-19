@@ -1,5 +1,8 @@
-/** Fischer initial time per side (5 minutes). */
-export const RANKED_INITIAL_MS = 5 * 60 * 1000;
+import { rankedClockFields } from "@shared/clock/rankedDefaults";
 
-/** Fischer increment per completed move (3 seconds). */
-export const RANKED_INCREMENT_MS = 3 * 1000;
+export { RANKED_INITIAL_MS, RANKED_INCREMENT_MS, rankedClockFields } from "@shared/clock/rankedDefaults";
+
+/** @deprecated Use rankedClockFields() from @shared/clock/rankedDefaults */
+export function rankedClockInsert() {
+	return rankedClockFields();
+}

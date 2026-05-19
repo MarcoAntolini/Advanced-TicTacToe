@@ -10,6 +10,7 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@shared": path.resolve(__dirname, "./shared"),
+			"@convex": path.resolve(__dirname, "./convex"),
 		},
 	},
 });

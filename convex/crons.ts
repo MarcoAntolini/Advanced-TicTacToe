@@ -10,9 +10,9 @@ crons.interval(
 );
 
 crons.interval(
-	"expire ranked matchmaking queue",
-	{ minutes: 5 },
-	internal.rankedMatchmaking.internal.expireStale,
+	"expire async turn timeouts",
+	{ hours: 1 },
+	internal.games.internal.expireAsyncTurns,
 );
 
 crons.interval(

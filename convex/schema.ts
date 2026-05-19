@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { gameStateValidator, statsValidator } from "./lib/validators";
+import { gameStateValidator, queueKindValidator, statsValidator } from "./lib/validators";
 
 const playerRef = v.union(v.id("users"), v.string(), v.null());
 
@@ -36,19 +36,21 @@ export default defineSchema({
 		.index("by_invite", ["inviteCode"])
 		.index("by_status_mode", ["status", "mode"])
 		.index("by_status_ranked", ["status", "isRanked"])
-		.index("by_status_visibility_mode", ["status", "visibility", "mode"]),
+		.index("by_status_visibility_mode", ["status", "visibility", "mode"])
+		.index("by_playerX_status", ["playerX", "status"])
+		.index("by_playerO_status", ["playerO", "status"])
+		.index("by_playerX_finishedAt", ["playerX", "finishedAt"])
+		.index("by_playerO_finishedAt", ["playerO", "finishedAt"]),
 
 	matchmakingQueue: defineTable({
-		userId: playerRef,
-		mode: v.union(v.literal("realtime"), v.literal("async")),
+		playerRef: playerRef,
+		queueKind: queueKindValidator,
 		joinedAt: v.number(),
-	}).index("by_mode_time", ["mode", "joinedAt"]),
-
-	rankedMatchmakingQueue: defineTable({
-		userId: v.id("users"),
-		joinedAt: v.number(),
-		ratingAtJoin: v.number(),
-	}).index("by_joinedAt", ["joinedAt"]),
+		matchedGameId: v.optional(v.id("games")),
+		ratingAtJoin: v.optional(v.number()),
+	})
+		.index("by_kind_time", ["queueKind", "joinedAt"])
+		.index("by_kind_player", ["queueKind", "playerRef"]),
 
 	seasons: defineTable({
 		seasonId: v.number(),

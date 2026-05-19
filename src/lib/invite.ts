@@ -1,6 +1,6 @@
-export function normalizeInviteCode(code: string): string {
-	return code.trim().toUpperCase().replace(/\s/g, "");
-}
+import { normalizeInviteCode } from "@shared/invite/normalize";
+
+export { normalizeInviteCode };
 
 export function buildJoinPath(code: string): string {
 	return `/join/${normalizeInviteCode(code)}`;

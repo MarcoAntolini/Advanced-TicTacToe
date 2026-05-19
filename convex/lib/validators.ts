@@ -36,3 +36,9 @@ export const statsValidator = v.object({
 	draws: v.number(),
 	streak: v.number(),
 });
+
+export const queueKindValidator = v.union(
+	v.literal("casual-realtime"),
+	v.literal("casual-async"),
+	v.literal("ranked-rated"),
+);

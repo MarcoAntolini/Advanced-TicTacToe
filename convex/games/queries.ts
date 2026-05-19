@@ -1,5 +1,6 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { classifyGame, gameDisplayMode, lobbyListingFields } from "@shared/policy/gameClassification";
 import { query } from "../_generated/server";
 import { getOptionalUserId, isParticipant } from "../lib/auth";
 import {
@@ -9,6 +10,7 @@ import {
 	normalizeInviteCode,
 	resolvePlayerRef,
 } from "../lib/room";
+import { listHistoryForUser } from "../lib/gameHistory";
 
 export const get = query({
 	args: { gameId: v.id("games") },
@@ -59,26 +61,10 @@ export const listHistory = query({
 		const userId = await getOptionalUserId(ctx);
 		if (!userId) return { page: [], isDone: true, continueCursor: "" };
 
-		const all = await ctx.db
-			.query("games")
-			.filter((q) => q.eq(q.field("status"), "finished"))
-			.order("desc")
-			.collect();
-
-		const mine = all.filter((g) => g.playerX === userId || g.playerO === userId);
-		const start = args.paginationOpts.cursor
-			? parseInt(args.paginationOpts.cursor, 10)
-			: 0;
-		const numItems = args.paginationOpts.numItems;
-		const page = mine.slice(start, start + numItems);
-		const next = start + numItems;
-		const isDone = next >= mine.length;
-
-		return {
-			page,
-			isDone,
-			continueCursor: isDone ? "" : String(next),
-		};
+		return listHistoryForUser(ctx, userId, {
+			numItems: args.paginationOpts.numItems,
+			cursor: args.paginationOpts.cursor,
+		});
 	},
 });
 
@@ -112,8 +98,7 @@ export const listPublicWaitingGames = query({
 		return open.slice(0, PUBLIC_LOBBY_LIMIT).map((game) => ({
 			gameId: game._id,
 			mode: game.mode,
-			isRanked: game.isRanked === true,
-			isPractice: game.isRanked === true && game.rated === false,
+			...lobbyListingFields(game),
 			inviteCode: game.inviteCode,
 			createdAt: game._creationTime,
 		}));
@@ -150,6 +135,8 @@ export const listMyActiveGames = query({
 			return {
 				gameId: game._id,
 				mode: game.mode,
+				classification: classifyGame(game),
+				displayMode: gameDisplayMode(game),
 				isRanked: game.isRanked === true,
 				status: game.status,
 				inviteCode: game.inviteCode,

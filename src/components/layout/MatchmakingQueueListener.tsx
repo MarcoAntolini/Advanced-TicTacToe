@@ -1,36 +1,31 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { api } from "@convex/_generated/api";
 import { getGuestId } from "@/lib/guest";
+import { useMatchmakingQueues } from "@/hooks/useMatchmakingQueue";
 
-/** Redirect to a new realtime game when matchmaking pairs the player. */
+/** Redirect when unified matchmaking sets matchedGameId on a queue row. */
 export function MatchmakingQueueListener() {
 	const router = useRouter();
 	const guestId = getGuestId();
-	const queueStatus = useQuery(api.matchmaking.queries.getMyStatus, { guestId });
-	const rankedQueueStatus = useQuery(api.rankedMatchmaking.queries.getMyStatus);
-	const activeGames = useQuery(api.games.queries.listMyActiveGames, { guestId });
+	const { status, matchedRedirect } = useMatchmakingQueues();
+	const acknowledgeMatch = useMutation(api.matchmaking.mutations.acknowledgeMatch);
+	const redirectedRef = useRef<string | null>(null);
 
 	useEffect(() => {
-		if (!activeGames) return;
+		if (!status || !matchedRedirect) return;
+		if (redirectedRef.current === matchedRedirect.gameId) return;
 
-		if (rankedQueueStatus?.inQueue) {
-			const rankedMatch = activeGames.find(
-				(g) => g.mode === "realtime" && g.status === "active" && g.isRanked,
-			);
-			if (rankedMatch) router.push(`/game/${rankedMatch.gameId}`);
-			return;
-		}
-
-		if (!queueStatus?.inQueue) return;
-		const match = activeGames.find(
-			(g) => g.mode === "realtime" && g.status === "active" && !g.isRanked,
-		);
-		if (match) router.push(`/game/${match.gameId}`);
-	}, [queueStatus?.inQueue, rankedQueueStatus?.inQueue, activeGames, router]);
+		redirectedRef.current = matchedRedirect.gameId;
+		router.push(`/game/${matchedRedirect.gameId}`);
+		void acknowledgeMatch({
+			guestId,
+			queueKind: matchedRedirect.queueKind,
+		});
+	}, [status, matchedRedirect, router, guestId, acknowledgeMatch]);
 
 	return null;
 }

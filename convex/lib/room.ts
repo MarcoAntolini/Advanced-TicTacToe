@@ -1,11 +1,17 @@
+import { normalizeInviteCode as normalizeInviteCodeShared } from "@shared/invite/normalize";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import { getOptionalUserId } from "./auth";
+import { listParticipatingGames } from "./participation";
 
 type Ctx = QueryCtx | MutationCtx;
 
+export {
+	findActiveRealtimeGame,
+	findOtherActiveRealtime,
+} from "./participation";
+
 export function normalizeInviteCode(code: string): string {
-	return code.trim().toUpperCase().replace(/\s/g, "");
+	return normalizeInviteCodeShared(code);
 }
 
 export function resolvePlayerRef(
@@ -26,65 +32,8 @@ export async function findGameByInviteCode(ctx: Ctx, inviteCode: string) {
 		.unique();
 }
 
-export async function findActiveRealtimeGame(
-	ctx: Ctx,
-	playerRef: Id<"users"> | string,
-	excludeGameId?: Id<"games">,
-) {
-	const waiting = await ctx.db
-		.query("games")
-		.filter((q) =>
-			q.and(q.eq(q.field("status"), "waiting"), q.eq(q.field("mode"), "realtime")),
-		)
-		.collect();
-
-	const active = await ctx.db
-		.query("games")
-		.withIndex("by_status_mode", (q) => q.eq("status", "active").eq("mode", "realtime"))
-		.collect();
-
-	const games = [...waiting, ...active];
-	return (
-		games.find(
-			(g) =>
-				(!excludeGameId || g._id !== excludeGameId) &&
-				(g.playerX === playerRef || g.playerO === playerRef),
-		) ?? null
-	);
-}
-
-export async function findOtherActiveRealtime(
-	ctx: Ctx,
-	playerRef: Id<"users"> | string,
-	excludeGameId: Id<"games">,
-) {
-	return findActiveRealtimeGame(ctx, playerRef, excludeGameId);
-}
-
 export async function listGamesForPlayer(ctx: Ctx, playerRef: Id<"users"> | string) {
-	const waiting = await ctx.db
-		.query("games")
-		.filter((q) => q.eq(q.field("status"), "waiting"))
-		.collect();
-
-	const activeRealtime = await ctx.db
-		.query("games")
-		.withIndex("by_status_mode", (q) => q.eq("status", "active").eq("mode", "realtime"))
-		.collect();
-
-	const activeAsync = await ctx.db
-		.query("games")
-		.withIndex("by_status_mode", (q) => q.eq("status", "active").eq("mode", "async"))
-		.collect();
-
-	const seen = new Set<string>();
-	const games = [...waiting, ...activeRealtime, ...activeAsync].filter((g) => {
-		if (seen.has(g._id)) return false;
-		seen.add(g._id);
-		return g.playerX === playerRef || g.playerO === playerRef;
-	});
-
-	return games;
+	return listParticipatingGames(ctx, playerRef);
 }
 
 export async function assignSecondPlayer(

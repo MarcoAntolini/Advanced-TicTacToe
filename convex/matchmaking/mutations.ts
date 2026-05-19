@@ -1,8 +1,15 @@
 import { v } from "convex/values";
+import { casualQueueKindFromMode } from "@shared/policy/queueKind";
+import { DEFAULT_RATING } from "@shared/ratings/elo";
+import { queueKindValidator } from "../lib/validators";
 import { mutation } from "../_generated/server";
-import { generateInviteCode, getOptionalUserId } from "../lib/auth";
-import { createInitialState, serializeGameState } from "../lib/game";
-import { findActiveRealtimeGame } from "../lib/room";
+import { getOptionalUserId, requireUserId } from "../lib/auth";
+import {
+	acknowledgeQueueMatch,
+	cancelInQueue,
+	enqueueInQueue,
+	resolveQueueKinds,
+} from "../lib/matchmaking/queue";
 
 const queueMode = v.union(v.literal("realtime"), v.literal("async"));
 
@@ -10,61 +17,27 @@ export const enqueue = mutation({
 	args: {
 		guestId: v.optional(v.string()),
 		mode: v.optional(queueMode),
+		queueKind: v.optional(queueKindValidator),
 	},
 	handler: async (ctx, args) => {
-		const mode = args.mode ?? "realtime";
+		const queueKind =
+			args.queueKind ?? casualQueueKindFromMode(args.mode ?? "realtime");
+
+		if (queueKind === "ranked-rated") {
+			const userId = await requireUserId(ctx);
+			const me = await ctx.db.get(userId);
+			return enqueueInQueue(ctx, {
+				queueKind,
+				playerRef: userId,
+				ratingAtJoin: me?.rating ?? DEFAULT_RATING,
+			});
+		}
+
 		const userId = await getOptionalUserId(ctx);
 		const playerRef = userId ?? args.guestId;
 		if (!playerRef) throw new Error("guestId or authentication required");
 
-		if (mode === "realtime") {
-			const activeGame = await findActiveRealtimeGame(ctx, playerRef);
-			if (activeGame) {
-				return {
-					matched: false as const,
-					blocked: true as const,
-					gameId: activeGame._id,
-					reason: "already_in_active_realtime" as const,
-				};
-			}
-		}
-
-		const existing = await ctx.db
-			.query("matchmakingQueue")
-			.withIndex("by_mode_time", (q) => q.eq("mode", mode))
-			.collect();
-
-		const myEntry = existing.find((e) => e.userId === playerRef);
-		const opponent = existing.find((e) => e.userId !== playerRef);
-
-		if (opponent) {
-			await ctx.db.delete(opponent._id);
-			if (myEntry) await ctx.db.delete(myEntry._id);
-			const inviteCode = generateInviteCode();
-			const gameId = await ctx.db.insert("games", {
-				mode,
-				status: "active",
-				inviteCode,
-				visibility: "private",
-				playerX: opponent.userId,
-				playerO: playerRef,
-				state: serializeGameState(createInitialState()),
-				currentTurnStartedAt: Date.now(),
-			});
-			return { matched: true as const, gameId };
-		}
-
-		if (myEntry) {
-			return { matched: false as const, inQueue: true as const };
-		}
-
-		await ctx.db.insert("matchmakingQueue", {
-			userId: playerRef,
-			mode,
-			joinedAt: Date.now(),
-		});
-
-		return { matched: false as const };
+		return enqueueInQueue(ctx, { queueKind, playerRef });
 	},
 });
 
@@ -72,28 +45,44 @@ export const cancel = mutation({
 	args: {
 		guestId: v.optional(v.string()),
 		mode: v.optional(queueMode),
+		queueKind: v.optional(queueKindValidator),
 	},
 	handler: async (ctx, args) => {
+		const queueKinds = resolveQueueKinds(args);
+
+		if (queueKinds.length === 1 && queueKinds[0] === "ranked-rated") {
+			const userId = await requireUserId(ctx);
+			await cancelInQueue(ctx, userId, queueKinds);
+			return;
+		}
+
 		const userId = await getOptionalUserId(ctx);
 		const playerRef = userId ?? args.guestId;
 		if (!playerRef) return;
 
-		const modes =
-			args.mode === undefined
-				? (["realtime", "async"] as const)
-				: ([args.mode] as const);
+		await cancelInQueue(ctx, playerRef, queueKinds);
+	},
+});
 
-		for (const mode of modes) {
-			const entries = await ctx.db
-				.query("matchmakingQueue")
-				.withIndex("by_mode_time", (q) => q.eq("mode", mode))
-				.collect();
+export const acknowledgeMatch = mutation({
+	args: {
+		guestId: v.optional(v.string()),
+		mode: v.optional(queueMode),
+		queueKind: v.optional(queueKindValidator),
+	},
+	handler: async (ctx, args) => {
+		const queueKinds = resolveQueueKinds(args);
 
-			for (const entry of entries) {
-				if (entry.userId === playerRef) {
-					await ctx.db.delete(entry._id);
-				}
-			}
+		if (queueKinds.length === 1 && queueKinds[0] === "ranked-rated") {
+			const userId = await requireUserId(ctx);
+			await acknowledgeQueueMatch(ctx, userId, queueKinds);
+			return;
 		}
+
+		const userId = await getOptionalUserId(ctx);
+		const playerRef = userId ?? args.guestId;
+		if (!playerRef) return;
+
+		await acknowledgeQueueMatch(ctx, playerRef, queueKinds);
 	},
 });

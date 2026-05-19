@@ -1,3 +1,4 @@
+import { shouldApplyRating } from "@shared/policy/gameClassification";
 import { applyEloPair, DEFAULT_RATING, type EloOutcome } from "@shared/ratings/elo";
 import type { Doc } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
@@ -21,7 +22,7 @@ export async function applyRatingResult(
 	game: Pick<Doc<"games">, "_id" | "isRanked" | "rated" | "playerX" | "playerO">,
 	outcome: EloOutcome,
 ) {
-	if (!game.isRanked || game.rated === false) return;
+	if (!shouldApplyRating(game)) return;
 	if (!isUserId(game.playerX) || !isUserId(game.playerO)) return;
 
 	const existing = await ctx.db

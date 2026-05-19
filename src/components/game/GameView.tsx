@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useCallback, useMemo, useState } from "react";
+import { reconcileDisplayState } from "@shared/policy/displayState";
+import { gameDisplayMode, shouldApplyRating } from "@shared/policy/gameClassification";
 import { applyMove, serializeGameState, type GameState } from "@/lib/game";
 import { getGuestId } from "@/lib/guest";
 import { GameHeader } from "./GameHeader";
@@ -71,19 +73,9 @@ export function GameView({
 		};
 	}, [localMode, localState, game]);
 
-	/** Align board UI with document status when older games only patched `game.status`. */
 	const displayState: GameState | undefined = useMemo(() => {
 		if (!state) return undefined;
-		if (localMode || !game || game.status !== "finished" || state.status !== "active") {
-			return state;
-		}
-		if (game.winner === "draw") {
-			return { ...state, status: "draw", winner: null };
-		}
-		if (game.winner === "X" || game.winner === "O") {
-			return { ...state, status: "won", winner: game.winner };
-		}
-		return state;
+		return reconcileDisplayState(state, game ?? undefined, { localMode });
 	}, [state, game, localMode]);
 
 	const canPlay =
@@ -91,10 +83,16 @@ export function GameView({
 		displayState.status === "active" &&
 		(localMode || game?.status === "active");
 
-	const mode = localMode ? "local" : game?.isRanked ? "ranked" : (game?.mode ?? "online");
+	const mode = localMode
+		? "local"
+		: game
+			? gameDisplayMode(game)
+			: "online";
 	const ratingResult = useQuery(
 		api.ratings.queries.getForGame,
-		gameId && game?.isRanked && game.status === "finished" ? { gameId } : "skip",
+		gameId && game && shouldApplyRating(game) && game.status === "finished"
+			? { gameId }
+			: "skip",
 	);
 	const waiting = !localMode && game?.status === "waiting";
 
