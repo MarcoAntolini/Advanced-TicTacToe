@@ -21,6 +21,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 		return (
 			<button
 				ref={ref}
+				type="button"
 				disabled={disabled || loading}
 				className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-base font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer ${variants[variant]} ${className}`}
 				{...props}

@@ -4,6 +4,9 @@ import { ClerkProvider, useAuth } from "@clerk/nextjs";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ReactNode } from "react";
+import { ClerkUserSync } from "@/components/auth/ClerkUserSync";
+import { MatchmakingQueueListener } from "@/components/layout/MatchmakingQueueListener";
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -17,6 +20,7 @@ function ConvexWithOptionalClerk({ children }: { children: ReactNode }) {
 	if (hasClerk) {
 		return (
 			<ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+				<ClerkUserSync />
 				{children}
 			</ConvexProviderWithClerk>
 		);
@@ -25,7 +29,14 @@ function ConvexWithOptionalClerk({ children }: { children: ReactNode }) {
 }
 
 export function Providers({ children }: { children: ReactNode }) {
-	const inner = <ConvexWithOptionalClerk>{children}</ConvexWithOptionalClerk>;
+	const inner = (
+		<ThemeProvider>
+			<ConvexWithOptionalClerk>
+				<MatchmakingQueueListener />
+				{children}
+			</ConvexWithOptionalClerk>
+		</ThemeProvider>
+	);
 
 	if (hasClerk) {
 		return <ClerkProvider publishableKey={clerkKey}>{inner}</ClerkProvider>;
