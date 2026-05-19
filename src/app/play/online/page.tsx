@@ -1,12 +1,18 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import Link from "next/link";
+import { Suspense, useMemo, useState } from "react";
+import { Users, Zap, KeyRound } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { getGuestId } from "@/lib/guest";
+import { useMatchmakingQueue } from "@/hooks/useMatchmakingQueue";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ActiveGameBlockedBanner } from "@/components/game/ActiveGamesList";
+import { PlayBreadcrumb } from "@/components/layout/PlayBreadcrumb";
+import { contentWidth } from "@/lib/layout";
 
 function OnlinePlayContent() {
 	const router = useRouter();
@@ -14,76 +20,86 @@ function OnlinePlayContent() {
 	const mode = (searchParams.get("mode") === "async" ? "async" : "realtime") as
 		| "realtime"
 		| "async";
+	const isRealtime = mode === "realtime";
 
 	const create = useMutation(api.games.mutations.create);
 	const enqueue = useMutation(api.matchmaking.mutations.enqueue);
-	const cancelQueue = useMutation(api.matchmaking.mutations.cancel);
-	const join = useMutation(api.games.mutations.join);
+	const { inQueue, cancelSearch, cancelling } = useMatchmakingQueue();
+	const activeGames = useQuery(api.games.queries.listMyActiveGames, {
+		guestId: getGuestId(),
+	});
 
-	const [inviteCode, setInviteCode] = useState("");
-	const [joinGameId, setJoinGameId] = useState("");
-	const [loading, setLoading] = useState(false);
+	const [loading, setLoading] = useState<"invite" | "match" | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const [queued, setQueued] = useState(false);
+	const [matchFeedback, setMatchFeedback] = useState<string | null>(null);
 
 	const guestId = getGuestId();
 
-	const handleCreate = async () => {
-		setLoading(true);
+	const blockingRealtimeGame = useMemo(
+		() => activeGames?.find((game) => game.mode === "realtime") ?? null,
+		[activeGames],
+	);
+	const realtimeBlocked = isRealtime && blockingRealtimeGame != null;
+
+	const handleInvite = async () => {
+		if (realtimeBlocked) return;
+
+		setLoading("invite");
 		setError(null);
+		setMatchFeedback(null);
 		try {
 			const result = await create({ mode, guestId });
 			router.push(`/game/${result.gameId}`);
 		} catch (e) {
-			setError(e instanceof Error ? e.message : "Failed to create game");
+			setError(e instanceof Error ? e.message : "Failed to create room");
 		} finally {
-			setLoading(false);
+			setLoading(null);
 		}
 	};
 
 	const handleQuickMatch = async () => {
-		setLoading(true);
+		if (realtimeBlocked) return;
+
+		setLoading("match");
 		setError(null);
+		setMatchFeedback(null);
 		try {
 			const result = await enqueue({ guestId });
+			if ("blocked" in result && result.blocked && result.gameId) {
+				setMatchFeedback(
+					"You're already in a realtime game. Finish or forfeit it before starting another.",
+				);
+				return;
+			}
+			if ("inQueue" in result && result.inQueue) {
+				setMatchFeedback("Already searching — check the header for status or cancel.");
+				return;
+			}
 			if (result.matched && result.gameId) {
 				router.push(`/game/${result.gameId}`);
-			} else {
-				setQueued(true);
+				return;
 			}
+			setMatchFeedback("Searching for an opponent. You can leave this page — cancel from the header anytime.");
 		} catch (e) {
-			setError(e instanceof Error ? e.message : "Matchmaking failed");
+			setMatchFeedback(e instanceof Error ? e.message : "Matchmaking failed");
 		} finally {
-			setLoading(false);
+			setLoading(null);
 		}
 	};
 
-	const handleCancelQueue = async () => {
-		await cancelQueue({ guestId });
-		setQueued(false);
-	};
-
-	const handleJoin = async () => {
-		if (!joinGameId.trim()) return;
-		setLoading(true);
-		setError(null);
-		try {
-			await join({
-				gameId: joinGameId.trim() as Parameters<typeof join>[0]["gameId"],
-				inviteCode: inviteCode || undefined,
-				guestId,
-			});
-			router.push(`/game/${joinGameId.trim()}`);
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "Failed to join");
-		} finally {
-			setLoading(false);
-		}
-	};
+	const modeLabel = mode === "realtime" ? "Realtime" : "Async";
 
 	return (
-		<div className="mx-auto max-w-lg space-y-6">
-			<h1 className="text-3xl font-bold capitalize">{mode} play</h1>
+		<div className={`${contentWidth.standard} space-y-10`}>
+			<PlayBreadcrumb label={modeLabel} />
+			<section>
+				<h1 className="text-3xl font-bold tracking-tight">{modeLabel}</h1>
+				<p className="mt-2 text-pretty text-muted">
+					{isRealtime
+						? "Find a random opponent or invite a friend to a private room."
+						: "Create a room and share a link — take turns whenever you're ready."}
+				</p>
+			</section>
 
 			{error ? (
 				<p className="rounded-md bg-danger/20 px-3 py-2 text-sm text-danger" role="alert">
@@ -91,54 +107,108 @@ function OnlinePlayContent() {
 				</p>
 			) : null}
 
-			<Card>
-				<h2 className="mb-4 text-lg font-medium">Create a room</h2>
-				<Button onClick={handleCreate} loading={loading} className="w-full">
-					Create game
-				</Button>
-			</Card>
-
-			{mode === "realtime" ? (
-				<Card>
-					<h2 className="mb-4 text-lg font-medium">Quick match</h2>
-					{queued ? (
-						<div className="space-y-3">
-							<p className="text-muted">Searching for opponent…</p>
-							<Button variant="secondary" onClick={handleCancelQueue} className="w-full">
-								Cancel
-							</Button>
-						</div>
-					) : (
-						<Button onClick={handleQuickMatch} loading={loading} className="w-full">
-							Find opponent
-						</Button>
-					)}
-				</Card>
+			{isRealtime && blockingRealtimeGame ? (
+				<ActiveGameBlockedBanner gameId={blockingRealtimeGame.gameId} />
 			) : null}
 
-			<Card>
-				<h2 className="mb-4 text-lg font-medium">Join with code</h2>
-				<div className="space-y-3">
-					<input
-						type="text"
-						placeholder="Game ID"
-						value={joinGameId}
-						onChange={(e) => setJoinGameId(e.target.value)}
-						className="min-h-11 w-full rounded-md border border-border bg-bg px-3"
-						aria-label="Game ID"
-					/>
-					<input
-						type="text"
-						placeholder="Invite code (optional)"
-						value={inviteCode}
-						onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-						className="min-h-11 w-full rounded-md border border-border bg-bg px-3"
-						aria-label="Invite code"
-					/>
-					<Button variant="secondary" onClick={handleJoin} loading={loading} className="w-full">
-						Join game
+			<section className="grid gap-4" aria-label={`${modeLabel} options`}>
+				{isRealtime ? (
+					<Card
+						className={`flex flex-col gap-4 sm:flex-row sm:items-center${realtimeBlocked ? " opacity-60" : ""}`}
+						aria-disabled={realtimeBlocked || undefined}
+					>
+						<div className="flex flex-1 gap-4">
+							<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-elevated ring-1 ring-border">
+								<Zap className="h-6 w-6 text-playerX" aria-hidden />
+							</div>
+							<div className="min-w-0 flex-1">
+								<h2 className="text-lg font-semibold">Find random opponent</h2>
+								<p className="mt-1 text-sm text-muted">
+									Get paired with someone online right now.
+								</p>
+								{inQueue ? (
+									<p className="mt-3 text-sm text-muted" role="status">
+										Searching for an opponent. You can leave this page — use{" "}
+										<span className="text-foreground">Cancel</span> in the header to stop.
+									</p>
+								) : matchFeedback ? (
+									<p
+										className="mt-3 rounded-md bg-surface-elevated px-3 py-2 text-sm text-foreground"
+										role="status"
+									>
+										{matchFeedback}
+									</p>
+								) : null}
+							</div>
+						</div>
+						<div className="shrink-0">
+							{inQueue && !realtimeBlocked ? (
+								<Button
+									type="button"
+									variant="secondary"
+									onClick={() => void cancelSearch()}
+									loading={cancelling}
+									className="w-full sm:hidden"
+								>
+									Cancel search
+								</Button>
+							) : (
+								<Button
+									type="button"
+									onClick={() => void handleQuickMatch()}
+									loading={loading === "match"}
+									disabled={realtimeBlocked}
+									className="w-full sm:w-auto"
+								>
+									Quick match
+								</Button>
+							)}
+						</div>
+					</Card>
+				) : null}
+
+				<Card
+					className={`flex flex-col gap-4 sm:flex-row sm:items-center${realtimeBlocked ? " opacity-60" : ""}`}
+					aria-disabled={realtimeBlocked || undefined}
+				>
+					<div className="flex flex-1 gap-4">
+						<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-elevated ring-1 ring-border">
+							<Users className="h-6 w-6 text-accent" aria-hidden />
+						</div>
+						<div>
+							<h2 className="text-lg font-semibold">Invite a friend</h2>
+							<p className="mt-1 text-sm text-muted">
+								Create a private room and share a link or code.
+							</p>
+						</div>
+					</div>
+					<Button
+						onClick={handleInvite}
+						loading={loading === "invite"}
+						disabled={realtimeBlocked}
+						variant={isRealtime ? "secondary" : "primary"}
+						className="w-full shrink-0 sm:w-auto"
+					>
+						Create room
 					</Button>
+				</Card>
+			</section>
+
+			<Card className="flex flex-col items-center gap-4 border-dashed text-center sm:flex-row sm:text-left">
+				<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-elevated">
+					<KeyRound className="h-6 w-6 text-muted" aria-hidden />
 				</div>
+				<div className="flex-1">
+					<h2 className="font-semibold">Have a room code?</h2>
+					<p className="mt-1 text-sm text-muted">
+						Your friend already created a room — join with their code or link.
+					</p>
+				</div>
+				<Link href="/join" className="w-full sm:w-auto">
+					<Button variant="ghost" className="w-full">
+						Join with code
+					</Button>
+				</Link>
 			</Card>
 		</div>
 	);
