@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Zap, Clock, KeyRound, ArrowRight } from "lucide-react";
+import { Users, Zap, Clock, KeyRound, ArrowRight, Swords } from "lucide-react";
 import { ActiveGamesList } from "@/components/game/ActiveGamesList";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -31,6 +31,15 @@ const modes = [
 		icon: Clock,
 		iconClass: "text-playerO",
 		cta: "Play async",
+		variant: "secondary" as const,
+	},
+	{
+		href: "/play/ranked",
+		title: "Ranked",
+		description: "Rated quick match with a 5+3 clock. Sign in required.",
+		icon: Swords,
+		iconClass: "text-accent",
+		cta: "Play ranked",
 		variant: "secondary" as const,
 	},
 ];

@@ -7,6 +7,7 @@ import { NavLink } from "./NavLink";
 import { UserMenu } from "./UserMenu";
 import { ActiveGamesBadge } from "./ActiveGamesBadge";
 import { MatchmakingQueueIndicator } from "./MatchmakingQueueIndicator";
+import { RankedMatchmakingQueueIndicator } from "./RankedMatchmakingQueueIndicator";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 
 export function MobileNav() {
@@ -52,6 +53,7 @@ export function MobileNav() {
 							</button>
 						</div>
 						<MatchmakingQueueIndicator variant="drawer" />
+						<RankedMatchmakingQueueIndicator variant="drawer" />
 						<nav className="flex flex-col gap-1" aria-label="Main">
 							{primaryNav.map((item) => (
 								<span key={item.href} className="relative inline-flex">

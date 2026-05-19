@@ -10,6 +10,7 @@ import { UserMenu } from "./UserMenu";
 import { MobileNav } from "./MobileNav";
 import { ActiveGamesBadge } from "./ActiveGamesBadge";
 import { MatchmakingQueueIndicator } from "./MatchmakingQueueIndicator";
+import { RankedMatchmakingQueueIndicator } from "./RankedMatchmakingQueueIndicator";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { Button } from "@/components/ui/Button";
 
@@ -51,6 +52,7 @@ export function Header() {
 
 				<div className="ml-auto flex min-w-0 items-center gap-2">
 					<MatchmakingQueueIndicator />
+					<RankedMatchmakingQueueIndicator />
 					{onHome ? (
 						<Link href="/play" className="sm:hidden">
 							<Button className="h-9 min-h-9 px-3.5 text-sm">Play</Button>

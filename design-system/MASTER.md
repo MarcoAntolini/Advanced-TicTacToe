@@ -51,7 +51,7 @@ export default function ActivityPage() {
 
 ### Navigation — single source of truth
 
-- Top-level routes: `src/lib/navigation.ts` → `primaryNav` (currently **Play**, **Rules**).
+- Top-level routes: `src/lib/navigation.ts` → `primaryNav` (currently **Play**, **Leaderboard**, **Rules**).
 - Header desktop nav, mobile drawer, and active states all consume `primaryNav`. **Do not** hard-code duplicate nav links elsewhere.
 - Logo/title links **home** (`/`); home is not a nav item.
 
@@ -84,6 +84,8 @@ Game-specific data (stats, finished-game history) lives on **`/activity`**, link
 
 - Header **Activity** pill (signed-in `UserMenu`, not `primaryNav`)
 - Home **Your record** teaser (`StatsTeaser`) → “View activity”
+
+**Ranked rating** (Elo) appears on `/activity` and the global **`/leaderboard`** (`primaryNav`). Ranked matchmaking is in-flow on `/play` → **Ranked** (`/play/ranked`); sign-in required. Casual/async stats (W/L/streak) stay separate from Elo.
 
 `/profile` and `/history` redirect to `/activity`. Do not reintroduce an Account tab or duplicate Clerk profile UI.
 

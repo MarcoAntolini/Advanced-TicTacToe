@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { BookOpen, Gamepad2 } from "lucide-react";
+import { BookOpen, Gamepad2, Trophy } from "lucide-react";
 
 export type NavItem = {
 	href: string;
@@ -16,6 +16,12 @@ export const primaryNav: NavItem[] = [
 		label: "Play",
 		icon: Gamepad2,
 		match: ["/play", "/join", "/game"],
+	},
+	{
+		href: "/leaderboard",
+		label: "Leaderboard",
+		icon: Trophy,
+		match: ["/leaderboard"],
 	},
 	{ href: "/rules", label: "Rules", icon: BookOpen, match: ["/rules"] },
 ];

@@ -9,6 +9,7 @@ import { applyMove, serializeGameState, type GameState } from "@/lib/game";
 import { getGuestId } from "@/lib/guest";
 import { GameHeader } from "./GameHeader";
 import { GameOverOverlay } from "./GameOverOverlay";
+import { RankedClockBar } from "./RankedClockBar";
 import { WaitingRoomPanel } from "./WaitingRoomPanel";
 import { UltimateBoard } from "./UltimateBoard";
 
@@ -27,6 +28,7 @@ export function GameView({
 }) {
 	const router = useRouter();
 	const guestId = getGuestId();
+	const profile = useQuery(api.users.queries.getProfile);
 	const game = useQuery(api.games.queries.get, gameId ? { gameId } : "skip");
 	const playMove = useMutation(api.games.mutations.playMove).withOptimisticUpdate(
 		(localStore, args) => {
@@ -89,7 +91,11 @@ export function GameView({
 		displayState.status === "active" &&
 		(localMode || game?.status === "active");
 
-	const mode = localMode ? "local" : game?.mode ?? "online";
+	const mode = localMode ? "local" : game?.isRanked ? "ranked" : (game?.mode ?? "online");
+	const ratingResult = useQuery(
+		api.ratings.queries.getForGame,
+		gameId && game?.isRanked && game.status === "finished" ? { gameId } : "skip",
+	);
 	const waiting = !localMode && game?.status === "waiting";
 
 	const handleMove = useCallback(
@@ -155,6 +161,10 @@ export function GameView({
 				</p>
 			) : null}
 
+			{!localMode && game?.isRanked && game.status === "active" ? (
+				<RankedClockBar game={game} />
+			) : null}
+
 			<div className="relative w-full">
 				<div className={waiting ? "pointer-events-none w-full opacity-40" : "w-full"}>
 					<UltimateBoard
@@ -174,6 +184,15 @@ export function GameView({
 
 				<GameOverOverlay
 					state={displayState}
+					ratingDelta={
+						game?.isRanked && ratingResult && profile
+							? profile._id === ratingResult.playerXId
+								? ratingResult.deltaX
+								: profile._id === ratingResult.playerOId
+									? ratingResult.deltaO
+									: undefined
+							: undefined
+					}
 					onRestart={localMode ? onLocalRestart : undefined}
 					onRematch={
 						!localMode && game?.status === "finished"

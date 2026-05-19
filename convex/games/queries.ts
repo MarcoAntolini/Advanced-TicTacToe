@@ -112,6 +112,7 @@ export const listMyActiveGames = query({
 			return {
 				gameId: game._id,
 				mode: game.mode,
+				isRanked: game.isRanked === true,
 				status: game.status,
 				inviteCode: game.inviteCode,
 				yourRole,

@@ -68,10 +68,13 @@ function getOutcomeCopy(state: GameState) {
 
 export function GameOverOverlay({
 	state,
+	ratingDelta,
 	onRestart,
 	onRematch,
 }: {
 	state: GameState;
+	/** Signed-in player's Elo change after a ranked game. */
+	ratingDelta?: number;
 	onRestart?: () => void;
 	onRematch?: () => void;
 }) {
@@ -138,6 +141,21 @@ export function GameOverOverlay({
 						{title}
 					</h2>
 					<p className="mt-2 text-muted">{subtitle}</p>
+
+					{ratingDelta !== undefined ? (
+						<p
+							className={`mt-3 font-mono text-lg font-semibold tabular-nums ${
+								ratingDelta > 0
+									? "text-success"
+									: ratingDelta < 0
+										? "text-danger"
+										: "text-muted"
+							}`}
+						>
+							Rating {ratingDelta > 0 ? "+" : ""}
+							{ratingDelta}
+						</p>
+					) : null}
 
 					<Button
 						variant="ghost"

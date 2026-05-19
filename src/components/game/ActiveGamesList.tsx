@@ -50,7 +50,7 @@ export function ActiveGamesList({
 						>
 							<div className="min-w-0 text-left">
 								<p className="font-medium capitalize text-foreground">
-									{game.mode}
+									{game.isRanked ? "ranked" : game.mode}
 									{game.yourRole ? (
 										<span className="ml-2 text-sm font-normal text-muted">
 											playing as {game.yourRole}
@@ -87,7 +87,7 @@ export function ActiveGameBlockedBanner({ gameId }: { gameId: string }) {
 			className="relative overflow-hidden border-playerO/30 bg-gradient-to-br from-playerO/10 via-surface to-surface"
 		>
 			<div
-				className="pointer-events-none absolute inset-y-3 left-0 w-1 rounded-r-full bg-playerO"
+				className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-playerO"
 				aria-hidden
 			/>
 			<div className="flex flex-col gap-4 pl-2 sm:flex-row sm:items-center sm:justify-between">

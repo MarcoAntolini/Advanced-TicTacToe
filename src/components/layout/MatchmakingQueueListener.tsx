@@ -11,15 +11,26 @@ export function MatchmakingQueueListener() {
 	const router = useRouter();
 	const guestId = getGuestId();
 	const queueStatus = useQuery(api.matchmaking.queries.getMyStatus, { guestId });
+	const rankedQueueStatus = useQuery(api.rankedMatchmaking.queries.getMyStatus);
 	const activeGames = useQuery(api.games.queries.listMyActiveGames, { guestId });
 
 	useEffect(() => {
-		if (!queueStatus?.inQueue || !activeGames) return;
+		if (!activeGames) return;
+
+		if (rankedQueueStatus?.inQueue) {
+			const rankedMatch = activeGames.find(
+				(g) => g.mode === "realtime" && g.status === "active" && g.isRanked,
+			);
+			if (rankedMatch) router.push(`/game/${rankedMatch.gameId}`);
+			return;
+		}
+
+		if (!queueStatus?.inQueue) return;
 		const match = activeGames.find(
-			(g) => g.mode === "realtime" && g.status === "active",
+			(g) => g.mode === "realtime" && g.status === "active" && !g.isRanked,
 		);
 		if (match) router.push(`/game/${match.gameId}`);
-	}, [queueStatus?.inQueue, activeGames, router]);
+	}, [queueStatus?.inQueue, rankedQueueStatus?.inQueue, activeGames, router]);
 
 	return null;
 }
