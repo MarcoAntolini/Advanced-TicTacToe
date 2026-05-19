@@ -82,6 +82,44 @@ export const listHistory = query({
 	},
 });
 
+const PUBLIC_LOBBY_LIMIT = 20;
+
+export const listPublicWaitingGames = query({
+	args: {
+		guestId: v.optional(v.string()),
+		mode: v.optional(v.union(v.literal("realtime"), v.literal("async"))),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getOptionalUserId(ctx);
+		const playerRef = userId ?? args.guestId;
+
+		const rows = await ctx.db
+			.query("games")
+			.withIndex("by_status_visibility_mode", (q) =>
+				q.eq("status", "waiting").eq("visibility", "public"),
+			)
+			.order("desc")
+			.take(50);
+
+		const open = rows.filter((game) => {
+			if (game.mode === "local") return false;
+			if (args.mode && game.mode !== args.mode) return false;
+			if (game.playerO !== null) return false;
+			if (playerRef && game.playerX === playerRef) return false;
+			return true;
+		});
+
+		return open.slice(0, PUBLIC_LOBBY_LIMIT).map((game) => ({
+			gameId: game._id,
+			mode: game.mode,
+			isRanked: game.isRanked === true,
+			isPractice: game.isRanked === true && game.rated === false,
+			inviteCode: game.inviteCode,
+			createdAt: game._creationTime,
+		}));
+	},
+});
+
 export const listMyActiveGames = query({
 	args: { guestId: v.optional(v.string()) },
 	handler: async (ctx, args) => {

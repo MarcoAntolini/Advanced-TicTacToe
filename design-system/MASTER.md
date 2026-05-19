@@ -85,13 +85,21 @@ Game-specific data (stats, finished-game history) lives on **`/activity`**, link
 - Header **Activity** pill (signed-in `UserMenu`, not `primaryNav`)
 - Home **Your record** teaser (`StatsTeaser`) → “View activity”
 
-**Ranked rating** (Elo) appears on `/activity` and the global **`/leaderboard`** (`primaryNav`). Ranked matchmaking is in-flow on `/play` → **Ranked** (`/play/ranked`); sign-in required. Casual/async stats (W/L/streak) stay separate from Elo.
+**Ranked rating** (Elo) appears on `/activity` and the global **`/leaderboard`** (`primaryNav`). Ranked matchmaking is in-flow on `/play?step=multiplayer` (auto-find **Ranked**); sign-in required. Casual/async stats (W/L/streak) stay separate from Elo.
+
+### Play flow wizard (`/play`)
+
+- **Continue playing** — `ActiveGamesList` (compact) at the top of every wizard step (`choose`, `multiplayer`, `create`); not replaced by the public-games modal.
+- **Steps** (query `?step=`): default **choose** (Local | Multiplayer) → **multiplayer** (auto-find, browse public modal, create, inline join code) → **create** (visibility, pace, rules).
+- **Auto-find** — inline enqueue (quick realtime, ranked, async); header queue indicators unchanged.
+- **Public lobby** — modal lists `visibility: public` waiting rooms; private rooms stay code/link only.
+- **Legacy URLs** — `/play/online`, `/play/ranked` redirect into the wizard.
 
 `/profile` and `/history` redirect to `/activity`. Do not reintroduce an Account tab or duplicate Clerk profile UI.
 
 ### Copy on home
 
-- Hero should **not** push a primary Play CTA; point users to header **Play** (see `src/app/page.tsx`).
+- Hero should **not** push a primary Play CTA or call out header **Play** in copy; modes and rules card cover discovery (see `src/app/page.tsx`).
 
 ### Play nav badge (`ActiveGamesBadge`)
 

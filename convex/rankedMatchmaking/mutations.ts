@@ -41,6 +41,7 @@ export const enqueue = mutation({
 			const gameId = await ctx.db.insert("games", {
 				mode: "realtime",
 				isRanked: true,
+				rated: true,
 				status: "active",
 				playerX: opponent.userId,
 				playerO: userId,

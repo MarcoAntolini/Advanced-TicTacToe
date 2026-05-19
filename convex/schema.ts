@@ -19,6 +19,8 @@ export default defineSchema({
 	games: defineTable({
 		mode: v.union(v.literal("local"), v.literal("realtime"), v.literal("async")),
 		isRanked: v.optional(v.boolean()),
+		rated: v.optional(v.boolean()),
+		visibility: v.optional(v.union(v.literal("public"), v.literal("private"))),
 		status: v.union(v.literal("waiting"), v.literal("active"), v.literal("finished")),
 		inviteCode: v.optional(v.string()),
 		playerX: playerRef,
@@ -33,11 +35,12 @@ export default defineSchema({
 	})
 		.index("by_invite", ["inviteCode"])
 		.index("by_status_mode", ["status", "mode"])
-		.index("by_status_ranked", ["status", "isRanked"]),
+		.index("by_status_ranked", ["status", "isRanked"])
+		.index("by_status_visibility_mode", ["status", "visibility", "mode"]),
 
 	matchmakingQueue: defineTable({
 		userId: playerRef,
-		mode: v.literal("realtime"),
+		mode: v.union(v.literal("realtime"), v.literal("async")),
 		joinedAt: v.number(),
 	}).index("by_mode_time", ["mode", "joinedAt"]),
 

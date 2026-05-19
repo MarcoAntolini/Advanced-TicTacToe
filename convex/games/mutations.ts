@@ -14,7 +14,18 @@ import {
 
 } from "../clock/lib/enforce";
 
-import { RANKED_INCREMENT_MS, RANKED_INITIAL_MS } from "../clock/lib/constants";
+import {
+	RANKED_INCREMENT_MS,
+	RANKED_INITIAL_MS,
+} from "../clock/lib/constants";
+
+function rankedClockInsert() {
+	return {
+		clockXMs: RANKED_INITIAL_MS,
+		clockOMs: RANKED_INITIAL_MS,
+		clockIncrementMs: RANKED_INCREMENT_MS,
+	};
+}
 
 import { generateInviteCode, getOptionalUserId, isParticipant } from "../lib/auth";
 
@@ -57,75 +68,125 @@ const ASYNC_TIMEOUT_MS = 72 * 60 * 60 * 1000;
 
 
 export const create = mutation({
-
 	args: {
-
 		mode: v.union(v.literal("local"), v.literal("realtime"), v.literal("async")),
-
 		guestId: v.optional(v.string()),
-
 		asPlayer: v.optional(v.union(v.literal("X"), v.literal("O"))),
-
+		visibility: v.optional(v.union(v.literal("public"), v.literal("private"))),
+		rankedRules: v.optional(v.boolean()),
 	},
-
 	handler: async (ctx, args) => {
-
 		const userId = await getOptionalUserId(ctx);
-
 		const playerRef = userId ?? args.guestId;
-
 		if (!playerRef) throw new Error("guestId or authentication required");
 
-
-
 		if (args.mode === "realtime") {
-
 			const active = await findActiveRealtimeGame(ctx, playerRef);
-
 			if (active) {
-
-				throw new Error("You already have an active realtime game. Resume it from My games.");
-
+				throw new Error(
+					"You already have an active realtime game. Resume it from Continue playing above.",
+				);
 			}
-
 		}
 
-
-
 		const asPlayer = args.asPlayer ?? "X";
-
 		const initialState = serializeGameState(createInitialState());
-
 		const inviteCode =
+			args.mode === "realtime" || args.mode === "async"
+				? generateInviteCode()
+				: undefined;
 
-			args.mode === "realtime" || args.mode === "async" ? generateInviteCode() : undefined;
+		const visibility =
+			args.mode === "local"
+				? undefined
+				: (args.visibility ?? "private");
 
-
+		const useRankedRules =
+			args.mode === "realtime" && args.rankedRules === true;
 
 		const gameId = await ctx.db.insert("games", {
-
 			mode: args.mode,
-
 			status: args.mode === "local" ? "active" : "waiting",
-
 			inviteCode,
-
+			visibility,
 			playerX: asPlayer === "X" ? playerRef : null,
-
 			playerO: asPlayer === "O" ? playerRef : null,
-
 			state: initialState,
-
 			currentTurnStartedAt: Date.now(),
-
+			...(useRankedRules
+				? {
+						isRanked: true,
+						rated: false,
+						...rankedClockInsert(),
+					}
+				: {}),
 		});
 
-
-
 		return { gameId, inviteCode };
-
 	},
+});
 
+export const joinPublicGame = mutation({
+	args: {
+		gameId: v.id("games"),
+		guestId: v.optional(v.string()),
+		forceLeaveActive: v.optional(v.boolean()),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getOptionalUserId(ctx);
+		const playerRef = resolvePlayerRef(userId, args.guestId);
+
+		const game = await ctx.db.get(args.gameId);
+		if (!game) throw new Error("Game not found");
+		if (game.visibility !== "public") {
+			throw new Error("This game is not open in the public lobby");
+		}
+		if (game.status !== "waiting") {
+			throw new Error("This game is no longer waiting for a player");
+		}
+
+		if (isParticipant(game, { userId, guestId: args.guestId })) {
+			return { result: "rejoin" as const, gameId: game._id };
+		}
+
+		if (game.playerX === playerRef || game.playerO === playerRef) {
+			return { result: "rejoin" as const, gameId: game._id };
+		}
+
+		if (game.mode === "realtime" && !args.forceLeaveActive) {
+			const conflict = await findOtherActiveRealtime(ctx, playerRef, game._id);
+			if (conflict) {
+				return {
+					result: "needs_confirm" as const,
+					conflictGameId: conflict._id,
+				};
+			}
+		}
+
+		if (args.forceLeaveActive && game.mode === "realtime") {
+			const conflict = await findOtherActiveRealtime(ctx, playerRef, game._id);
+			if (conflict) {
+				const forfeiterIsX =
+					conflict.playerX === playerRef ||
+					conflict.playerX === userId ||
+					conflict.playerX === args.guestId;
+				const winner: Player = forfeiterIsX ? "O" : "X";
+				if (conflict.playerO && conflict.playerX) {
+					await ctx.db.patch(
+						conflict._id,
+						buildFinishedGamePatch(conflict, winner),
+					);
+					await finishSideEffects(ctx, conflict, winner);
+				}
+			}
+		}
+
+		const joined = await assignSecondPlayer(ctx, game._id, playerRef);
+		return {
+			result: joined.rejoin ? ("rejoin" as const) : ("joined" as const),
+			gameId: joined.gameId,
+		};
+	},
 });
 
 

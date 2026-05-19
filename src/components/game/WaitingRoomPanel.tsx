@@ -14,11 +14,10 @@ import { Card } from "@/components/ui/Card";
 export function WaitingRoomPanel({
 	gameId,
 	inviteCode,
-	mode,
 }: {
 	gameId: Id<"games">;
 	inviteCode: string;
-	mode: string;
+	mode?: string;
 }) {
 	const router = useRouter();
 	const guestId = getGuestId();
@@ -48,7 +47,7 @@ export function WaitingRoomPanel({
 		setError(null);
 		try {
 			await cancelRoom({ gameId, guestId });
-			router.push(`/play/online?mode=${mode}`);
+			router.push("/play?step=multiplayer");
 		} catch (e) {
 			setError(e instanceof Error ? e.message : "Could not cancel room");
 		} finally {

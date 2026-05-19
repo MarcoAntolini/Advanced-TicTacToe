@@ -61,7 +61,7 @@ export function Header() {
 					<div className="hidden sm:block">
 						<ThemeSwitcher />
 					</div>
-					<div className="hidden md:block">
+					<div className="hidden sm:block">
 						<UserMenu />
 					</div>
 					<MobileNav />

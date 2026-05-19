@@ -1,7 +1,13 @@
 /** Decorative 3×3 meta-board used on the rules page (not interactive). */
 import { PlayerMark } from "@/components/game/PlayerMark";
 
-export function MetaBoardDiagram() {
+export function MetaBoardDiagram({
+	className = "",
+	showCaption = true,
+}: {
+	className?: string;
+	showCaption?: boolean;
+}) {
 	const cells: Array<"empty" | "x" | "o" | "closed" | "active"> = [
 		"x",
 		"empty",
@@ -16,7 +22,7 @@ export function MetaBoardDiagram() {
 
 	return (
 		<div
-			className="mx-auto w-full max-w-[220px] rounded-xl border border-border bg-surface-elevated p-2.5 shadow-inner"
+			className={`mx-auto w-full max-w-[220px] rounded-xl border border-border bg-surface-elevated p-2.5 shadow-inner ${className}`}
 			aria-hidden
 		>
 			<div className="grid grid-cols-3 gap-1.5">
@@ -24,9 +30,11 @@ export function MetaBoardDiagram() {
 					<MiniBoard key={i} kind={kind} />
 				))}
 			</div>
-			<p className="mt-3 text-center text-[10px] font-medium uppercase tracking-wider text-muted">
-				9 small boards · 1 meta-grid
-			</p>
+			{showCaption ? (
+				<p className="mt-3 text-center text-[10px] font-medium uppercase tracking-wider text-muted">
+					9 small boards · 1 meta-grid
+				</p>
+			) : null}
 		</div>
 	);
 }

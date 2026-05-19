@@ -18,10 +18,10 @@ async function incrementRatedGames(
 
 export async function applyRatingResult(
 	ctx: MutationCtx,
-	game: Pick<Doc<"games">, "_id" | "isRanked" | "playerX" | "playerO">,
+	game: Pick<Doc<"games">, "_id" | "isRanked" | "rated" | "playerX" | "playerO">,
 	outcome: EloOutcome,
 ) {
-	if (!game.isRanked) return;
+	if (!game.isRanked || game.rated === false) return;
 	if (!isUserId(game.playerX) || !isUserId(game.playerO)) return;
 
 	const existing = await ctx.db

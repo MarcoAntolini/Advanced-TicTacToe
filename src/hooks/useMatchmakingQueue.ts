@@ -11,19 +11,26 @@ export function useMatchmakingQueue() {
 	const cancelQueue = useMutation(api.matchmaking.mutations.cancel);
 	const [cancelling, setCancelling] = useState(false);
 
+	const inQueueRealtime = queueStatus?.inQueueRealtime ?? false;
+	const inQueueAsync = queueStatus?.inQueueAsync ?? false;
 	const inQueue = queueStatus?.inQueue ?? false;
 
-	const cancelSearch = useCallback(async () => {
-		setCancelling(true);
-		try {
-			await cancelQueue({ guestId });
-		} finally {
-			setCancelling(false);
-		}
-	}, [cancelQueue, guestId]);
+	const cancelSearch = useCallback(
+		async (mode?: "realtime" | "async") => {
+			setCancelling(true);
+			try {
+				await cancelQueue({ guestId, mode });
+			} finally {
+				setCancelling(false);
+			}
+		},
+		[cancelQueue, guestId],
+	);
 
 	return {
 		inQueue,
+		inQueueRealtime,
+		inQueueAsync,
 		cancelSearch,
 		cancelling,
 		isLoading: queueStatus === undefined,

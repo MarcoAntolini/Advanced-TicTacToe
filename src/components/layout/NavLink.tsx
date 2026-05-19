@@ -43,7 +43,7 @@ export function NavLink({
 			href={item.href}
 			onClick={onNavigate}
 			aria-current={active ? "page" : undefined}
-			className={`relative inline-flex min-h-10 items-center gap-2 text-sm font-medium transition-colors ${base} ${state} ${className}`}
+			className={`relative flex min-h-10 items-center gap-2 text-sm font-medium transition-colors ${base} ${state} ${className}`}
 		>
 			<Icon className="h-4 w-4 shrink-0" aria-hidden />
 			{item.label}
