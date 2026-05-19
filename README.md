@@ -7,7 +7,7 @@ Ultimate Tic-Tac-Toe built with **Next.js 15**, **Convex**, and optional **Clerk
 - **Local** pass-and-play
 - **Realtime** online (invite code + quick match)
 - **Async** turns (72h timeout per turn)
-- Optional accounts: profile, stats, game history
+- Optional accounts: stats, game history (`/activity`)
 
 ## Setup
 
@@ -39,6 +39,12 @@ npm run all
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Online play
+
+- **Invite a friend** — creates a room; share **copy link** or **room code** from the waiting screen
+- **Quick match** (realtime) — random pairing
+- **Join with code** — [`/join`](http://localhost:3000/join) or open `/join/ROOMCODE` from an invite link
+
 ## Scripts
 
 | Command | Description |
@@ -55,4 +61,4 @@ Open [http://localhost:3000](http://localhost:3000).
 - `convex/` — Schema, queries, mutations, matchmaking
 - `src/app/` — App Router pages
 - `src/components/game/` — Board UI
-- `design-system/MASTER.md` — UI tokens reference
+- `design-system/MASTER.md` — UI tokens, layout, navigation, and CTA conventions (read before UI work)
