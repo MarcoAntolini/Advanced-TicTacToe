@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { ArrowRight, BarChart3 } from "lucide-react";
 import { api } from "@convex/_generated/api";
+import { DEFAULT_RATING } from "@shared/ratings/elo";
 import { hasClerk } from "@/lib/clerk";
 import { Card } from "@/components/ui/Card";
 
@@ -16,6 +17,8 @@ function StatsTeaserContent() {
 	}
 
 	const { wins, losses, draws, streak } = profile.stats;
+	const rating = profile.rating ?? DEFAULT_RATING;
+	const ratedGames = profile.ratedGames ?? 0;
 
 	return (
 		<section aria-label="Your record">
@@ -27,6 +30,13 @@ function StatsTeaserContent() {
 					<div>
 						<p className="text-sm font-medium">Your record</p>
 						<p className="mt-0.5 text-sm text-muted">
+							{ratedGames > 0 ? (
+								<>
+									<span className="font-semibold text-accent">{rating}</span>
+									<span className="mx-1.5 text-muted">Elo</span>
+									<span className="text-muted">·</span>
+								</>
+							) : null}
 							<span className="font-semibold text-success">{wins}</span>
 							<span className="mx-1.5 text-muted">W</span>
 							<span className="font-semibold text-danger">{losses}</span>

@@ -9,8 +9,9 @@ import { Card } from "@/components/ui/Card";
 export function LeaderboardList() {
 	const rows = useQuery(api.ratings.queries.listLeaderboard, { limit: 50 });
 	const myContext = useQuery(api.ratings.queries.getMyRankContext);
+	const season = useQuery(api.ratings.queries.getSeason);
 
-	if (rows === undefined) {
+	if (rows === undefined || season === undefined) {
 		return <p className="text-sm text-muted">Loading leaderboard…</p>;
 	}
 
@@ -18,7 +19,8 @@ export function LeaderboardList() {
 		return (
 			<Card className="border-dashed text-center">
 				<p className="text-sm text-muted">
-					No rated players yet. Be the first to play ranked from the Play hub.
+					No players on the {season.label} board yet. Play at least {season.leaderboardMinGames}{" "}
+					ranked games to qualify.
 				</p>
 			</Card>
 		);
@@ -26,6 +28,12 @@ export function LeaderboardList() {
 
 	return (
 		<Card className="overflow-hidden p-0">
+			<div className="border-b border-border px-4 py-3">
+				<p className="text-sm font-medium text-foreground">{season.label}</p>
+				<p className="text-xs text-muted">
+					Top rated players with {season.leaderboardMinGames}+ ranked games
+				</p>
+			</div>
 			<ul className="divide-y divide-border">
 				{rows.map((row) => {
 					const isMe = myContext && row.userId === myContext.userId;
@@ -46,9 +54,7 @@ export function LeaderboardList() {
 										<span className="ml-2 text-xs font-normal text-accent">(you)</span>
 									) : null}
 								</p>
-								<p className="text-xs text-muted">
-									{row.stats.wins}W · {row.stats.losses}L · {row.stats.draws}D
-								</p>
+								<p className="text-xs text-muted">{row.ratedGames} ranked games</p>
 							</div>
 							<span className="shrink-0 font-mono text-lg font-semibold tabular-nums text-accent">
 								{row.rating ?? DEFAULT_RATING}
@@ -61,15 +67,26 @@ export function LeaderboardList() {
 				<p className="border-t border-border px-4 py-3 text-center text-xs text-muted">
 					Your rating:{" "}
 					<span className="font-semibold text-foreground">{myContext.rating}</span>
-					{" · "}
-					Rank #{myContext.rank}
+					{myContext.onLeaderboard && myContext.rank ? (
+						<>
+							{" · "}
+							Rank #{myContext.rank}
+						</>
+					) : myContext.gamesUntilLeaderboard > 0 ? (
+						<>
+							{" · "}
+							{myContext.gamesUntilLeaderboard} more ranked{" "}
+							{myContext.gamesUntilLeaderboard === 1 ? "game" : "games"} to appear on the
+							board
+						</>
+					) : null}
 				</p>
 			) : (
 				<p className="border-t border-border px-4 py-3 text-center text-xs text-muted">
 					<Link href="/play/ranked" className="text-accent hover:underline">
 						Sign in and play ranked
 					</Link>{" "}
-					to appear on the board.
+					to earn a rating.
 				</p>
 			)}
 		</Card>

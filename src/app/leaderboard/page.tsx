@@ -7,8 +7,8 @@ export default function LeaderboardPage() {
 			<section>
 				<h1 className="text-3xl font-bold tracking-tight">Leaderboard</h1>
 				<p className="mt-2 text-pretty text-muted">
-					Top players by Elo rating from ranked realtime matches. Casual and async games
-					do not change rating.
+					Season 1 standings for players with at least five ranked games. Ratings use
+					standard Elo (start 1200); only ranked realtime affects your score.
 				</p>
 			</section>
 			<section aria-label="Top rated players">

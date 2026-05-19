@@ -20,7 +20,12 @@ export const ensureUser = mutation({
 			.unique();
 
 		if (existing) {
-			const patch: { displayName?: string; avatarUrl?: string; rating?: number } = {};
+			const patch: {
+				displayName?: string;
+				avatarUrl?: string;
+				rating?: number;
+				ratedGames?: number;
+			} = {};
 			if (existing.displayName !== args.displayName) {
 				patch.displayName = args.displayName;
 			}
@@ -29,6 +34,19 @@ export const ensureUser = mutation({
 			}
 			if (existing.rating === undefined) {
 				patch.rating = DEFAULT_RATING;
+			}
+			if (existing.ratedGames === undefined) {
+				const asX = await ctx.db
+					.query("ratingResults")
+					.withIndex("by_playerX_time", (q) => q.eq("playerXId", existing._id))
+					.collect();
+				const asO = await ctx.db
+					.query("ratingResults")
+					.withIndex("by_playerO_time", (q) => q.eq("playerOId", existing._id))
+					.collect();
+				patch.ratedGames = new Set(
+					[...asX, ...asO].map((r) => r.gameId),
+				).size;
 			}
 			if (Object.keys(patch).length > 0) {
 				await ctx.db.patch(existing._id, patch);
@@ -42,6 +60,7 @@ export const ensureUser = mutation({
 			avatarUrl: args.avatarUrl,
 			stats: defaultStats,
 			rating: DEFAULT_RATING,
+			ratedGames: 0,
 		});
 	},
 });

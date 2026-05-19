@@ -2,6 +2,7 @@
 
 import { ActivityStats } from "@/components/activity/ActivityStats";
 import { GameHistoryList } from "@/components/activity/GameHistoryList";
+import { RatingHistory } from "@/components/activity/RatingHistory";
 import { Card } from "@/components/ui/Card";
 import { hasClerk } from "@/lib/clerk";
 import { contentWidth } from "@/lib/layout";
@@ -29,6 +30,11 @@ export default function ActivityPage() {
 			</div>
 
 			<ActivityStats />
+
+			<section className="space-y-4" aria-label="Ranked rating history">
+				<h2 className="text-lg font-semibold">Ranked history</h2>
+				<RatingHistory />
+			</section>
 
 			<section className="space-y-4">
 				<h2 className="text-lg font-semibold">Game history</h2>

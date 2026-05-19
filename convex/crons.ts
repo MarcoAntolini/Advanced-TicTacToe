@@ -21,4 +21,10 @@ crons.interval(
 	internal.clock.internal.expireRankedClocks,
 );
 
+crons.interval(
+	"ensure seasons table seeded",
+	{ hours: 24 },
+	internal.ratings.internal.ensureSeasons,
+);
+
 export default crons;

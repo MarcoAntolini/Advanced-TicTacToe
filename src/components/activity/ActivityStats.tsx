@@ -35,7 +35,13 @@ export function ActivityStats() {
 						</p>
 						{rankContext ? (
 							<p className="mt-1 text-sm text-muted">
-								Rank #{rankContext.rank} on leaderboard
+								{rankContext.onLeaderboard && rankContext.rank
+									? `Rank #${rankContext.rank} on leaderboard`
+									: rankContext.gamesUntilLeaderboard > 0
+										? `${rankContext.gamesUntilLeaderboard} more ranked ${
+												rankContext.gamesUntilLeaderboard === 1 ? "game" : "games"
+											} to appear on the board`
+										: `${rankContext.ratedGames} ranked games played`}
 							</p>
 						) : null}
 					</div>

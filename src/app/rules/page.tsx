@@ -177,12 +177,58 @@ export default function RulesPage() {
 				</div>
 			</section>
 
+			{/* Ranked & rating */}
+			<section className="space-y-4">
+				<div>
+					<h2 className="text-xl font-semibold sm:text-2xl">Ranked play &amp; Elo</h2>
+					<p className="mt-1 text-sm text-muted">
+						Signed-in quick matches with ratings, matchmaking, and season standings.
+					</p>
+				</div>
+				<Card>
+					<ul className="space-y-3 text-sm leading-relaxed text-muted">
+						<li>
+							<strong className="font-medium text-foreground">Ranked</strong> is a
+							signed-in quick match on a <strong className="font-medium text-foreground">5+3 Fischer clock</strong> — five minutes per player, plus three seconds added each move. Forfeiting or running out of time counts as a loss.
+						</li>
+						<li>
+							Everyone starts at <strong className="font-medium text-foreground">1200 Elo</strong>.
+							Wins, losses, and draws against rated opponents move both ratings (K=32).
+							Casual realtime and async games do not affect your rating.
+						</li>
+						<li>
+							Matchmaking looks for opponents within{" "}
+							<strong className="font-medium text-foreground">±200 rating</strong> first, then
+							widens the range by 50 every ten seconds you wait.
+						</li>
+						<li>
+							The public leaderboard lists players with at least{" "}
+							<strong className="font-medium text-foreground">five ranked games</strong> in the
+							current season. Track your rating trend on{" "}
+							<Link href="/activity" className="font-medium text-accent hover:underline">
+								Activity
+							</Link>
+							.
+						</li>
+					</ul>
+					<p className="mt-4 text-sm">
+						<Link href="/play/ranked" className="font-medium text-accent hover:underline">
+							Play ranked
+						</Link>
+						<span className="text-muted"> · </span>
+						<Link href="/leaderboard" className="font-medium text-accent hover:underline">
+							Leaderboard
+						</Link>
+					</p>
+				</Card>
+			</section>
+
 			{/* CTA */}
 			<section className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border bg-surface/50 px-6 py-8 text-center sm:flex-row sm:text-left">
 				<div className="flex-1">
 					<p className="font-semibold">Ready to try it?</p>
 					<p className="mt-1 text-sm text-muted">
-						Local, realtime, and async all use these rules.
+						Local, realtime, async, and ranked all use the same board rules above.
 					</p>
 				</div>
 				<Link href="/play" className="shrink-0">

@@ -68,8 +68,8 @@ export default function RankedPlayPage() {
 			<section>
 				<h1 className="text-3xl font-bold tracking-tight">Ranked</h1>
 				<p className="mt-2 text-pretty text-muted">
-					Rated realtime matchmaking with a 5+3 Fischer clock. Wins and losses update your
-					Elo; casual and async modes do not.
+					Rated quick match with a 5+3 Fischer clock. Opponents are paired within ±200 Elo
+					at first, widening every 10 seconds. Casual and async modes do not change rating.
 				</p>
 			</section>
 
@@ -94,8 +94,8 @@ export default function RankedPlayPage() {
 						<div>
 							<h2 className="text-lg font-semibold">Find ranked match</h2>
 							<p className="mt-1 text-sm text-muted">
-								5 minutes per side plus 3 seconds added after each move. Timeout counts
-								as a loss.
+								5 minutes per side plus 3 seconds per move. Timeout counts as a loss.
+								Play five ranked games to appear on the leaderboard.
 							</p>
 						</div>
 					</div>
