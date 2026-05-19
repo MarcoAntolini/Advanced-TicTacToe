@@ -1,12 +1,55 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { query } from "../_generated/server";
-import { getOptionalUserId } from "../lib/auth";
+import { getOptionalUserId, isParticipant } from "../lib/auth";
+import {
+	findGameByInviteCode,
+	isHost,
+	listGamesForPlayer,
+	normalizeInviteCode,
+	resolvePlayerRef,
+} from "../lib/room";
 
 export const get = query({
 	args: { gameId: v.id("games") },
 	handler: async (ctx, args) => {
 		return await ctx.db.get(args.gameId);
+	},
+});
+
+export const getRoomByCode = query({
+	args: {
+		inviteCode: v.string(),
+		guestId: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const code = normalizeInviteCode(args.inviteCode);
+		if (!code) return null;
+
+		const game = await findGameByInviteCode(ctx, code);
+		if (!game) return null;
+
+		const userId = await getOptionalUserId(ctx);
+		let playerRef: ReturnType<typeof resolvePlayerRef> | null = null;
+		try {
+			playerRef = resolvePlayerRef(userId, args.guestId);
+		} catch {
+			playerRef = null;
+		}
+
+		const participant = playerRef
+			? isParticipant(game, { userId, guestId: args.guestId })
+			: false;
+
+		return {
+			gameId: game._id,
+			inviteCode: game.inviteCode,
+			mode: game.mode,
+			status: game.status,
+			canJoin: game.status === "waiting",
+			isParticipant: participant,
+			isHost: playerRef ? await isHost(ctx, game, playerRef) : false,
+		};
 	},
 });
 
@@ -39,25 +82,62 @@ export const listHistory = query({
 	},
 });
 
-export const listMyTurns = query({
-	args: {},
-	handler: async (ctx) => {
+export const listMyActiveGames = query({
+	args: { guestId: v.optional(v.string()) },
+	handler: async (ctx, args) => {
 		const userId = await getOptionalUserId(ctx);
-		if (!userId) return [];
+		const playerRef = userId ?? args.guestId;
+		if (!playerRef) return [];
 
-		const active = await ctx.db
-			.query("games")
-			.withIndex("by_status_mode", (q) => q.eq("status", "active"))
-			.collect();
+		const games = await listGamesForPlayer(ctx, playerRef);
 
-		return active.filter((game) => {
-			if (game.mode !== "async") return false;
-			const isX = game.playerX === userId;
-			const isO = game.playerO === userId;
-			const myTurn =
+		return games.map((game) => {
+			const isX = game.playerX === playerRef;
+			const isO = game.playerO === playerRef;
+			const yourRole = isX ? "X" : isO ? "O" : null;
+			const isYourTurn =
+				game.status === "active" &&
+				yourRole !== null &&
+				game.state.currentPlayer === yourRole;
+
+			let statusLabel: string;
+			if (game.status === "waiting") {
+				statusLabel = isX ? "Waiting for opponent" : "Waiting to start";
+			} else if (isYourTurn) {
+				statusLabel = "Your turn";
+			} else {
+				statusLabel = "In progress";
+			}
+
+			return {
+				gameId: game._id,
+				mode: game.mode,
+				status: game.status,
+				inviteCode: game.inviteCode,
+				yourRole,
+				isYourTurn,
+				statusLabel,
+			};
+		});
+	},
+});
+
+export const listMyTurns = query({
+	args: { guestId: v.optional(v.string()) },
+	handler: async (ctx, args) => {
+		const userId = await getOptionalUserId(ctx);
+		const playerRef = userId ?? args.guestId;
+		if (!playerRef) return [];
+
+		const games = await listGamesForPlayer(ctx, playerRef);
+		return games.filter((game) => {
+			if (game.mode !== "async" || game.status !== "active") return false;
+			const isX = game.playerX === playerRef;
+			const isO = game.playerO === playerRef;
+			return (
 				(game.state.currentPlayer === "X" && isX) ||
-				(game.state.currentPlayer === "O" && isO);
-			return myTurn;
+				(game.state.currentPlayer === "O" && isO)
+			);
 		});
 	},
 });

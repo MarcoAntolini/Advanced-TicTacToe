@@ -19,10 +19,16 @@ export const ensureUser = mutation({
 			.unique();
 
 		if (existing) {
-			await ctx.db.patch(existing._id, {
-				displayName: args.displayName,
-				avatarUrl: args.avatarUrl ?? existing.avatarUrl,
-			});
+			const patch: { displayName?: string; avatarUrl?: string } = {};
+			if (existing.displayName !== args.displayName) {
+				patch.displayName = args.displayName;
+			}
+			if (existing.avatarUrl !== args.avatarUrl) {
+				patch.avatarUrl = args.avatarUrl;
+			}
+			if (Object.keys(patch).length > 0) {
+				await ctx.db.patch(existing._id, patch);
+			}
 			return existing._id;
 		}
 
@@ -31,22 +37,6 @@ export const ensureUser = mutation({
 			displayName: args.displayName,
 			avatarUrl: args.avatarUrl,
 			stats: defaultStats,
-		});
-	},
-});
-
-export const updateProfile = mutation({
-	args: {
-		displayName: v.string(),
-		avatarUrl: v.optional(v.string()),
-	},
-	handler: async (ctx, args) => {
-		const userId = await getOptionalUserId(ctx);
-		if (!userId) throw new Error("Not authenticated");
-
-		await ctx.db.patch(userId, {
-			displayName: args.displayName,
-			avatarUrl: args.avatarUrl,
 		});
 	},
 });

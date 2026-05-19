@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation } from "../_generated/server";
 import { generateInviteCode, getOptionalUserId } from "../lib/auth";
 import { createInitialState, serializeGameState } from "../lib/game";
+import { findActiveRealtimeGame } from "../lib/room";
 export const enqueue = mutation({
 	args: {
 		guestId: v.optional(v.string()),
@@ -16,24 +17,22 @@ export const enqueue = mutation({
 			.withIndex("by_mode_time", (q) => q.eq("mode", "realtime"))
 			.collect();
 
-		const alreadyQueued = existing.some((e) => e.userId === playerRef);
-		if (alreadyQueued) throw new Error("Already in queue");
+		const myEntry = existing.find((e) => e.userId === playerRef);
 
-		const activeGames = await ctx.db
-			.query("games")
-			.withIndex("by_status_mode", (q) =>
-				q.eq("status", "active").eq("mode", "realtime"),
-			)
-			.collect();
-
-		const inActiveGame = activeGames.some(
-			(g) => g.playerX === playerRef || g.playerO === playerRef,
-		);
-		if (inActiveGame) throw new Error("Already in an active game");
+		const activeGame = await findActiveRealtimeGame(ctx, playerRef);
+		if (activeGame) {
+			return {
+				matched: false as const,
+				blocked: true as const,
+				gameId: activeGame._id,
+				reason: "already_in_active_realtime" as const,
+			};
+		}
 
 		const opponent = existing.find((e) => e.userId !== playerRef);
 		if (opponent) {
 			await ctx.db.delete(opponent._id);
+			if (myEntry) await ctx.db.delete(myEntry._id);
 			const inviteCode = generateInviteCode();
 			const gameId = await ctx.db.insert("games", {
 				mode: "realtime",
@@ -45,6 +44,10 @@ export const enqueue = mutation({
 				currentTurnStartedAt: Date.now(),
 			});
 			return { matched: true as const, gameId };
+		}
+
+		if (myEntry) {
+			return { matched: false as const, inQueue: true as const };
 		}
 
 		await ctx.db.insert("matchmakingQueue", {

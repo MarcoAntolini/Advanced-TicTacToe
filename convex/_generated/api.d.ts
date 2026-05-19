@@ -12,10 +12,13 @@ import type * as crons from "../crons.js";
 import type * as games_mutations from "../games/mutations.js";
 import type * as games_queries from "../games/queries.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_finishGame from "../lib/finishGame.js";
 import type * as lib_game from "../lib/game.js";
+import type * as lib_room from "../lib/room.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as matchmaking_internal from "../matchmaking/internal.js";
 import type * as matchmaking_mutations from "../matchmaking/mutations.js";
+import type * as matchmaking_queries from "../matchmaking/queries.js";
 import type * as users_mutations from "../users/mutations.js";
 import type * as users_queries from "../users/queries.js";
 
@@ -30,10 +33,13 @@ declare const fullApi: ApiFromModules<{
   "games/mutations": typeof games_mutations;
   "games/queries": typeof games_queries;
   "lib/auth": typeof lib_auth;
+  "lib/finishGame": typeof lib_finishGame;
   "lib/game": typeof lib_game;
+  "lib/room": typeof lib_room;
   "lib/validators": typeof lib_validators;
   "matchmaking/internal": typeof matchmaking_internal;
   "matchmaking/mutations": typeof matchmaking_mutations;
+  "matchmaking/queries": typeof matchmaking_queries;
   "users/mutations": typeof users_mutations;
   "users/queries": typeof users_queries;
 }>;

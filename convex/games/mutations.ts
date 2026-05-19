@@ -3,6 +3,15 @@ import type { Id } from "../_generated/dataModel";
 import { mutation } from "../_generated/server";
 import { generateInviteCode, getOptionalUserId, isParticipant } from "../lib/auth";
 import {
+	assignSecondPlayer,
+	findActiveRealtimeGame,
+	findGameByInviteCode,
+	findOtherActiveRealtime,
+	isHost,
+	resolvePlayerRef,
+} from "../lib/room";
+import { buildFinishedGamePatch } from "../lib/finishGame";
+import {
 	applyMove,
 	createInitialState,
 	serializeGameState,
@@ -53,15 +62,6 @@ async function updateStats(
 	if (isUserId(loserId)) await updateStatsForUser(ctx, loserId, "loss");
 }
 
-function resolvePlayerRef(
-	userId: Id<"users"> | null,
-	guestId: string | undefined,
-): Id<"users"> | string {
-	if (userId) return userId;
-	if (guestId) return guestId;
-	throw new Error("guestId or authentication required");
-}
-
 export const create = mutation({
 	args: {
 		mode: v.union(v.literal("local"), v.literal("realtime"), v.literal("async")),
@@ -72,6 +72,13 @@ export const create = mutation({
 		const userId = await getOptionalUserId(ctx);
 		const playerRef = userId ?? args.guestId;
 		if (!playerRef) throw new Error("guestId or authentication required");
+
+		if (args.mode === "realtime") {
+			const active = await findActiveRealtimeGame(ctx, playerRef);
+			if (active) {
+				throw new Error("You already have an active realtime game. Resume it from My games.");
+			}
+		}
 
 		const asPlayer = args.asPlayer ?? "X";
 		const initialState = serializeGameState(createInitialState());
@@ -92,37 +99,77 @@ export const create = mutation({
 	},
 });
 
-export const join = mutation({
+export const joinByInviteCode = mutation({
+	args: {
+		inviteCode: v.string(),
+		guestId: v.optional(v.string()),
+		forceLeaveActive: v.optional(v.boolean()),
+	},
+	handler: async (ctx, args) => {
+		const userId = await getOptionalUserId(ctx);
+		const playerRef = resolvePlayerRef(userId, args.guestId);
+
+		const game = await findGameByInviteCode(ctx, args.inviteCode);
+		if (!game) throw new Error("Invalid invite code");
+
+		if (isParticipant(game, { userId, guestId: args.guestId })) {
+			return { result: "rejoin" as const, gameId: game._id };
+		}
+
+		if (game.mode === "realtime" && !args.forceLeaveActive) {
+			const conflict = await findOtherActiveRealtime(ctx, playerRef, game._id);
+			if (conflict) {
+				return {
+					result: "needs_confirm" as const,
+					conflictGameId: conflict._id,
+				};
+			}
+		}
+
+		if (args.forceLeaveActive && game.mode === "realtime") {
+			const conflict = await findOtherActiveRealtime(ctx, playerRef, game._id);
+			if (conflict) {
+				const forfeiterIsX =
+					conflict.playerX === playerRef ||
+					conflict.playerX === userId ||
+					conflict.playerX === args.guestId;
+				const winner: Player = forfeiterIsX ? "O" : "X";
+				if (conflict.playerO && conflict.playerX) {
+					await ctx.db.patch(
+						conflict._id,
+						buildFinishedGamePatch(conflict, winner),
+					);
+					await updateStats(ctx, winner, conflict.playerX, conflict.playerO);
+				}
+			}
+		}
+
+		const joined = await assignSecondPlayer(ctx, game._id, playerRef);
+		return {
+			result: joined.rejoin ? ("rejoin" as const) : ("joined" as const),
+			gameId: joined.gameId,
+		};
+	},
+});
+
+export const cancelRoom = mutation({
 	args: {
 		gameId: v.id("games"),
-		inviteCode: v.optional(v.string()),
 		guestId: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		const game = await ctx.db.get(args.gameId);
 		if (!game) throw new Error("Game not found");
-		if (game.status !== "waiting") throw new Error("Game is not joinable");
-		if (game.inviteCode && args.inviteCode !== game.inviteCode) {
-			throw new Error("Invalid invite code");
-		}
+		if (game.status !== "waiting") throw new Error("Only waiting rooms can be cancelled");
 
 		const userId = await getOptionalUserId(ctx);
-		const playerRef = userId ?? args.guestId;
-		if (!playerRef) throw new Error("guestId or authentication required");
+		const playerRef = resolvePlayerRef(userId, args.guestId);
 
-		if (game.playerX === playerRef || game.playerO === playerRef) {
-			throw new Error("Already in game");
+		if (!(await isHost(ctx, game, playerRef))) {
+			throw new Error("Only the host can cancel this room");
 		}
 
-		const slot = game.playerX === null ? "playerX" : game.playerO === null ? "playerO" : null;
-		if (!slot) throw new Error("Game is full");
-
-		await ctx.db.patch(args.gameId, {
-			[slot]: playerRef,
-			status: "active",
-			currentTurnStartedAt: Date.now(),
-		});
-
+		await ctx.db.delete(args.gameId);
 		return { ok: true };
 	},
 });
@@ -160,11 +207,11 @@ export const playMove = mutation({
 			const elapsed = Date.now() - game.currentTurnStartedAt;
 			if (elapsed > ASYNC_TIMEOUT_MS) {
 				const inactive = current === "X" ? "O" : "X";
-				await ctx.db.patch(args.gameId, {
-					status: "finished",
-					winner: inactive,
-					finishedAt: Date.now(),
-				});
+				await ctx.db.patch(
+					args.gameId,
+					buildFinishedGamePatch(game, inactive),
+				);
+				await updateStats(ctx, inactive, game.playerX, game.playerO);
 				throw new Error("Turn timed out");
 			}
 		}
@@ -226,12 +273,7 @@ export const forfeit = mutation({
 		const isX = game.playerX === userId || game.playerX === args.guestId;
 		const winner: Player = isX ? "O" : "X";
 
-		await ctx.db.patch(args.gameId, {
-			status: "finished",
-			winner,
-			finishedAt: Date.now(),
-		});
-
+		await ctx.db.patch(args.gameId, buildFinishedGamePatch(game, winner));
 		await updateStats(ctx, winner, game.playerX, game.playerO);
 	},
 });
