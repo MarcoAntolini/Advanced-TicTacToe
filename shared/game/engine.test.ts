@@ -5,6 +5,8 @@ import {
 	getLegalMoves,
 	resolveMetaWinner,
 	resolveSmallBoardWinner,
+	isForfeitWin,
+	stateWithWinner,
 } from "./engine";
 
 describe("Ultimate Tic-Tac-Toe engine", () => {
@@ -63,5 +65,20 @@ describe("Ultimate Tic-Tac-Toe engine", () => {
 		let state = createInitialState();
 		state = applyMove(state, 0, 0);
 		expect(() => applyMove(state, 0, 0)).toThrow("Illegal move");
+	});
+
+	it("marks state as won without changing the board", () => {
+		const state = createInitialState();
+		const finished = stateWithWinner(state, "O");
+		expect(finished.status).toBe("won");
+		expect(finished.winner).toBe("O");
+		expect(finished.boards).toEqual(state.boards);
+	});
+
+	it("detects forfeit wins with no moves played", () => {
+		const state = createInitialState();
+		expect(isForfeitWin(state)).toBe(false);
+		expect(isForfeitWin(stateWithWinner(state, "O"))).toBe(true);
+		expect(isForfeitWin(state, "O")).toBe(true);
 	});
 });

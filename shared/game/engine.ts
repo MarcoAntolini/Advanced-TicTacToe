@@ -161,6 +161,35 @@ export function isGameOver(state: GameState): boolean {
 	return state.status !== "active";
 }
 
+/** Won without any moves — forfeit, opponent left, or abandoned an active realtime game. */
+export function isForfeitWin(
+	state: GameState,
+	documentWinner?: "X" | "O" | "draw" | null,
+): boolean {
+	if (state.moves.length > 0) return false;
+	const winner = state.winner ?? documentWinner;
+	return winner === "X" || winner === "O";
+}
+
+/** Mark an in-progress state as won (e.g. forfeit) without changing the board. */
+export function stateWithWinner(state: GameState, winner: Player): GameState {
+	return {
+		...state,
+		boards: state.boards.map((b) => [...b]),
+		meta: [...state.meta],
+		moves: [...state.moves],
+		status: "won",
+		winner,
+	};
+}
+
+export type SerializedGameState = ReturnType<typeof serializeGameState>;
+
+/** Stored Convex state may omit `lastMove` when unset (`v.optional` in schema). */
+export type SerializedGameStateInput = Omit<SerializedGameState, "lastMove"> & {
+	lastMove?: SerializedGameState["lastMove"];
+};
+
 export function serializeGameState(state: GameState) {
 	return {
 		boards: state.boards,
@@ -174,7 +203,7 @@ export function serializeGameState(state: GameState) {
 	};
 }
 
-export function deserializeGameState(data: ReturnType<typeof serializeGameState>): GameState {
+export function deserializeGameState(data: SerializedGameStateInput): GameState {
 	return {
 		boards: data.boards.map((b) => [...b]),
 		meta: [...data.meta],
