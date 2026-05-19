@@ -14,7 +14,7 @@ export function UltimateBoard({
 }) {
 	return (
 		<div
-			className="mx-auto grid max-w-lg grid-cols-3 gap-1 sm:gap-2"
+			className="mx-auto grid aspect-square w-full grid-cols-3 grid-rows-3 gap-1.5 sm:gap-2"
 			role="grid"
 			aria-label="Ultimate tic-tac-toe board"
 		>

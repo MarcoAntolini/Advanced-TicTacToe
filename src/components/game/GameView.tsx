@@ -8,9 +8,9 @@ import { useCallback, useMemo, useState } from "react";
 import { applyMove, serializeGameState, type GameState } from "@/lib/game";
 import { getGuestId } from "@/lib/guest";
 import { GameHeader } from "./GameHeader";
+import { GameOverOverlay } from "./GameOverOverlay";
+import { WaitingRoomPanel } from "./WaitingRoomPanel";
 import { UltimateBoard } from "./UltimateBoard";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 
 export function GameView({
 	gameId,
@@ -55,9 +55,7 @@ export function GameView({
 	);
 	const forfeit = useMutation(api.games.mutations.forfeit);
 	const rematch = useMutation(api.games.mutations.rematch);
-	const join = useMutation(api.games.mutations.join);
 	const [error, setError] = useState<string | null>(null);
-	const [joinCode, setJoinCode] = useState("");
 	const [loading, setLoading] = useState(false);
 
 	const state: GameState | undefined = useMemo(() => {
@@ -71,11 +69,32 @@ export function GameView({
 		};
 	}, [localMode, localState, game]);
 
+	/** Align board UI with document status when older games only patched `game.status`. */
+	const displayState: GameState | undefined = useMemo(() => {
+		if (!state) return undefined;
+		if (localMode || !game || game.status !== "finished" || state.status !== "active") {
+			return state;
+		}
+		if (game.winner === "draw") {
+			return { ...state, status: "draw", winner: null };
+		}
+		if (game.winner === "X" || game.winner === "O") {
+			return { ...state, status: "won", winner: game.winner };
+		}
+		return state;
+	}, [state, game, localMode]);
+
+	const canPlay =
+		!!displayState &&
+		displayState.status === "active" &&
+		(localMode || game?.status === "active");
+
 	const mode = localMode ? "local" : game?.mode ?? "online";
+	const waiting = !localMode && game?.status === "waiting";
 
 	const handleMove = useCallback(
 		async (board: number, cell: number) => {
-			if (!state || state.status !== "active") return;
+			if (!canPlay) return;
 			setError(null);
 
 			if (localMode && onLocalMove) {
@@ -93,36 +112,23 @@ export function GameView({
 				setLoading(false);
 			}
 		},
-		[state, localMode, onLocalMove, gameId, playMove, guestId],
+		[canPlay, localMode, onLocalMove, gameId, playMove, guestId],
 	);
-
-	const handleJoin = async () => {
-		if (!gameId) return;
-		setLoading(true);
-		try {
-			await join({ gameId, inviteCode: joinCode || undefined, guestId });
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "Join failed");
-		} finally {
-			setLoading(false);
-		}
-	};
 
 	if (!localMode && game === undefined) {
 		return <p className="text-muted">Loading game…</p>;
 	}
 
-	if (!state) {
+	if (!displayState) {
 		return <p className="text-muted">Game not found.</p>;
 	}
-
-	const waiting = game?.status === "waiting";
 
 	return (
 		<div>
 			<GameHeader
-				state={state}
+				state={displayState}
 				mode={mode}
+				gameStatus={localMode ? undefined : game?.status}
 				onRestart={localMode ? onLocalRestart : undefined}
 				onForfeit={
 					!localMode && game?.status === "active"
@@ -149,35 +155,37 @@ export function GameView({
 				</p>
 			) : null}
 
-			{waiting ? (
-				<Card className="mb-6 max-w-md">
-					<h2 className="mb-2 text-lg font-medium">Waiting for opponent</h2>
-					{game?.inviteCode ? (
-						<p className="mb-4 text-muted">
-							Share code: <strong className="text-foreground">{game.inviteCode}</strong>
-						</p>
-					) : null}
-					<div className="flex flex-col gap-2 sm:flex-row">
-						<input
-							type="text"
-							placeholder="Invite code to join"
-							value={joinCode}
-							onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-							className="min-h-11 flex-1 rounded-md border border-border bg-bg px-3 text-foreground"
-							aria-label="Invite code"
-						/>
-						<Button onClick={handleJoin} loading={loading}>
-							Join game
-						</Button>
-					</div>
-				</Card>
-			) : null}
+			<div className="relative w-full">
+				<div className={waiting ? "pointer-events-none w-full opacity-40" : "w-full"}>
+					<UltimateBoard
+						state={displayState}
+						onMove={handleMove}
+						interactive={!waiting && canPlay && !loading}
+					/>
+				</div>
 
-			<UltimateBoard
-				state={state}
-				onMove={handleMove}
-				interactive={!waiting && state.status === "active" && !loading}
-			/>
+				{waiting && gameId && game?.inviteCode ? (
+					<WaitingRoomPanel
+						gameId={gameId}
+						inviteCode={game.inviteCode}
+						mode={game.mode}
+					/>
+				) : null}
+
+				<GameOverOverlay
+					state={displayState}
+					onRestart={localMode ? onLocalRestart : undefined}
+					onRematch={
+						!localMode && game?.status === "finished"
+							? async () => {
+									if (!gameId) return;
+									const result = await rematch({ gameId, guestId });
+									router.push(`/game/${result.gameId}`);
+								}
+							: undefined
+					}
+				/>
+			</div>
 		</div>
 	);
 }
