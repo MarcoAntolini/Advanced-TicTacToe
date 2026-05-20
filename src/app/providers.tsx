@@ -3,10 +3,20 @@
 import { ClerkProvider, useAuth } from "@clerk/nextjs";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
+import dynamic from "next/dynamic";
 import { ReactNode } from "react";
 import { ClerkUserSync } from "@/components/auth/ClerkUserSync";
-import { MatchmakingQueueListener } from "@/components/layout/MatchmakingQueueListener";
+import { MatchmakingProvider } from "@/components/layout/MatchmakingContext";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { WebVitalsReporter } from "@/components/WebVitalsReporter";
+
+const MatchmakingQueueListener = dynamic(
+	() =>
+		import("@/components/layout/MatchmakingQueueListener").then(
+			(m) => m.MatchmakingQueueListener,
+		),
+	{ ssr: false },
+);
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -31,9 +41,12 @@ function ConvexWithOptionalClerk({ children }: { children: ReactNode }) {
 export function Providers({ children }: { children: ReactNode }) {
 	const inner = (
 		<ThemeProvider>
+			<WebVitalsReporter />
 			<ConvexWithOptionalClerk>
-				<MatchmakingQueueListener />
-				{children}
+				<MatchmakingProvider>
+					<MatchmakingQueueListener />
+					{children}
+				</MatchmakingProvider>
 			</ConvexWithOptionalClerk>
 		</ThemeProvider>
 	);

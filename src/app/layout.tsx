@@ -13,8 +13,6 @@ export const metadata: Metadata = {
 	description: "Ultimate Tic-Tac-Toe — local, realtime, and async multiplayer",
 };
 
-export const dynamic = "force-dynamic";
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 	const themeScript = `(function(){try{var t=localStorage.getItem("${THEME_STORAGE_KEY}");document.documentElement.dataset.theme=t||"${DEFAULT_THEME}"}catch(e){document.documentElement.dataset.theme="${DEFAULT_THEME}"}})();`;
 

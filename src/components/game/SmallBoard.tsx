@@ -1,7 +1,7 @@
 "use client";
 
+import { memo } from "react";
 import type { GameState, Player } from "@shared/game/types";
-import { getLegalMoves, isBoardPlayable } from "@shared/game/engine";
 import { Cell } from "./Cell";
 import { PlayerMark } from "./PlayerMark";
 
@@ -37,26 +37,36 @@ function BoardClosedOverlay() {
 	);
 }
 
-export function SmallBoard({
-	boardIndex,
-	state,
-	onMove,
-	interactive,
-}: {
+type SmallBoardProps = {
 	boardIndex: number;
-	state: GameState;
+	boardCells: GameState["boards"][number];
+	metaWinner: GameState["meta"][number];
+	activeBoard: GameState["activeBoard"];
+	status: GameState["status"];
+	legalCells: Set<number>;
 	onMove?: (board: number, cell: number) => void;
 	interactive?: boolean;
-}) {
-	const legal = interactive ? getLegalMoves(state) : [];
-	const metaWinner = state.meta[boardIndex];
-	const isWon = metaWinner === "X" || metaWinner === "O";
-	const isClosed = !isBoardPlayable(boardIndex, state);
+};
+
+export const SmallBoard = memo(function SmallBoard({
+	boardIndex,
+	boardCells,
+	metaWinner,
+	activeBoard,
+	status,
+	legalCells,
+	onMove,
+	interactive,
+}: SmallBoardProps) {
+	const metaWinnerPlayer = metaWinner === "X" || metaWinner === "O" ? metaWinner : null;
+	const isWon = metaWinnerPlayer !== null;
+	const isClosed = metaWinner !== null || !boardCells.some((cell) => cell === null);
 	const isActive =
 		interactive &&
+		status === "active" &&
 		!isWon &&
-		(state.activeBoard === null || state.activeBoard === boardIndex) &&
-		isBoardPlayable(boardIndex, state);
+		!isClosed &&
+		(activeBoard === null || activeBoard === boardIndex);
 
 	return (
 		<div
@@ -65,11 +75,11 @@ export function SmallBoard({
 			} ${isWon || isClosed ? "[&_button]:opacity-40" : ""}`}
 			role="group"
 			aria-label={`Board ${boardIndex + 1}${
-				isWon ? `, won by ${metaWinner}` : isClosed ? ", closed" : ""
+				isWon ? `, won by ${metaWinnerPlayer}` : isClosed ? ", closed" : ""
 			}`}
 		>
-			{state.boards[boardIndex].map((cell, cellIndex) => {
-				const canPlay = legal.some((m) => m.board === boardIndex && m.cell === cellIndex);
+			{boardCells.map((cell, cellIndex) => {
+				const canPlay = legalCells.has(cellIndex);
 				return (
 					<Cell
 						key={cellIndex}
@@ -81,8 +91,8 @@ export function SmallBoard({
 				);
 			})}
 
-			{isWon ? <BoardClaimOverlay winner={metaWinner} /> : null}
+			{isWon && metaWinnerPlayer ? <BoardClaimOverlay winner={metaWinnerPlayer} /> : null}
 			{!isWon && isClosed ? <BoardClosedOverlay /> : null}
 		</div>
 	);
-}
+});

@@ -1,14 +1,24 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import { ActiveGamesList } from "@/components/game/ActiveGamesList";
 import { PlayBreadcrumb } from "@/components/layout/PlayBreadcrumb";
 import { PlayStepChoose } from "@/components/play/PlayStepChoose";
-import { PlayStepCreate } from "@/components/play/PlayStepCreate";
-import { PlayStepMultiplayer } from "@/components/play/PlayStepMultiplayer";
 import { contentWidth } from "@/lib/layout";
 import { PLAY_FLOW_COPY } from "@/lib/play/playFlowConfig";
 import { usePlayFlow } from "@/hooks/usePlayFlow";
+
+const PlayStepCreate = dynamic(
+	() => import("@/components/play/PlayStepCreate").then((m) => m.PlayStepCreate),
+	{ loading: () => <p className="text-muted">Loading create options…</p> },
+);
+
+const PlayStepMultiplayer = dynamic(
+	() =>
+		import("@/components/play/PlayStepMultiplayer").then((m) => m.PlayStepMultiplayer),
+	{ loading: () => <p className="text-muted">Loading multiplayer options…</p> },
+);
 
 function PlayFlowWizardContent() {
 	const { step, breadcrumbLabel, goToStep, goBack, prefillMode } = usePlayFlow();
